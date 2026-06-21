@@ -170,7 +170,8 @@ README.md                                                                       
 
 ## 🔁 Biểu đồ hoạt động (Activity Diagram)
 
-### 1. 
+### 1. Chi tiêu
+![expense Diagram](Quanlychitieu/Img/expense.jpeg)
 
 ### 2. 
 
