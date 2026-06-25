@@ -1,10 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`Server running at http://localhost:${port}`);
+
+  app.use(cookieParser());
+  app.use(
+    session({
+      secret: 'mySecretKey',
+      resave: false,
+      saveUninitialized: false,
+    }),
+  );
+
+  await app.listen(process.env.PORT || 3001);
 }
 bootstrap();
