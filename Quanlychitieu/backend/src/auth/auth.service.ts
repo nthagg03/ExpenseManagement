@@ -45,28 +45,20 @@ export class AuthService {
     return await this.userRepository.save(user);
   }
   async login(dto: LoginDto) {
-
-  const user = await this.userRepository.findOne({
-    where: {
-      username: dto.username,
-    },
-  });
+  const user = await this.userRepository
+    .createQueryBuilder('user')
+    .addSelect('user.password')
+    .where('user.username = :username', { username: dto.username })
+    .getOne();
 
   if (!user) {
-    throw new UnauthorizedException(
-      'Sai tài khoản hoặc mật khẩu',
-    );
+    throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
   }
 
-  const isMatch = await bcrypt.compare(
-    dto.password,
-    user.password,
-  );
+  const isMatch = await bcrypt.compare(dto.password, user.password);
 
   if (!isMatch) {
-    throw new UnauthorizedException(
-      'Sai tài khoản hoặc mật khẩu',
-    );
+    throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
   }
 
   const payload = {
@@ -75,8 +67,7 @@ export class AuthService {
   };
 
   return {
-    access_token:
-      this.jwtService.sign(payload),
+    access_token: this.jwtService.sign(payload),
   };
 }
 }
