@@ -1,26 +1,28 @@
 import {
-    IsNotEmpty, IsOptional, IsString,
-    IsNumber, IsDateString, MaxLength, Min, IsInt, Max
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsPositive,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateBudgetDto {
-    @IsNotEmpty()
-    @IsNumber()
-    userId: number;
+  @Type(() => Number)
+  @IsNumber()
+  @IsPositive()
+  amount: number;
 
-    @IsNotEmpty()
-    @IsInt()
-    @Min(1)
-    @Max(12)
-    month: number;
+  @IsDateString()
+  startDate: string;
 
-    @IsNotEmpty()
-    @IsInt()
-    @Min(2000)
-    year: number;
+  @IsDateString()
+  endDate: string;
 
-    @IsNotEmpty()
-    @IsNumber()
-    @Min(0)
-    limitAmount: number;
+  @Type(() => Number)
+  @IsInt()
+  categoryId: number;
+
+  @Type(() => Number)
+  @IsInt()
+  userId: number;
 }

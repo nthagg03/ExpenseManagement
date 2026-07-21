@@ -1,24 +1,31 @@
 import {
-    IsNotEmpty, IsOptional, IsString,
-    IsNumber, IsDateString, MaxLength, Min
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsString,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateIncomeDto {
-    @IsNotEmpty()
-    @IsNumber()
-    userId: number;
+  @IsString()
+  @IsNotEmpty()
+  description: string;
 
-    @IsOptional()
-    @IsString()
-    @MaxLength(255)
-    description?: string;
+  @Type(() => Number)
+  @IsNumber()
+  @IsPositive()
+  amount: number;
 
-    @IsNotEmpty()
-    @IsNumber()
-    @Min(0)
-    amount: number;
+  @IsDateString()
+  incomeDate: string;
 
-    @IsNotEmpty()
-    @IsDateString()
-    incomeDate: string;
+  @Type(() => Number)
+  @IsInt()
+  categoryId: number;
+
+  @Type(() => Number)
+  @IsInt()
+  userId: number;
 }

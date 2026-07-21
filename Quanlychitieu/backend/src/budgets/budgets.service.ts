@@ -1,48 +1,82 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { Budget } from './entities/budget.entity';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 
 @Injectable()
 export class BudgetsService {
-    constructor(
-        @InjectRepository(Budget)
-        private readonly budgetsRepository: Repository<Budget>,
-    ) {}
+  constructor(
+    @InjectRepository(Budget)
+    private readonly budgetRepository: Repository<Budget>,
+  ) {}
 
-    create(createBudgetDto: CreateBudgetDto): Promise<Budget> {
-        const budget = this.budgetsRepository.create(createBudgetDto);
-        return this.budgetsRepository.save(budget);
+  create(createBudgetDto: CreateBudgetDto) {
+    const budget = this.budgetRepository.create(
+      createBudgetDto,
+    );
+
+    return this.budgetRepository.save(budget);
+  }
+
+  findAll() {
+    return this.budgetRepository.find({
+      order: {
+        id: 'DESC',
+      },
+    });
+  }
+
+  findByUser(userId: number) {
+    return this.budgetRepository.find({
+      where: {
+        userId,
+      },
+      order: {
+        id: 'DESC',
+      },
+    });
+  }
+
+  async findOne(id: number) {
+    const budget = await this.budgetRepository.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!budget) {
+      throw new NotFoundException(
+        `Không tìm thấy ngân sách có id ${id}`,
+      );
     }
 
-    findAll(): Promise<Budget[]> {
-        return this.budgetsRepository.find({ relations: ['user'] });
-    }
+    return budget;
+  }
 
-    findByUser(userId: number): Promise<Budget[]> {
-        return this.budgetsRepository.find({ where: { userId } });
-    }
+  async update(
+    id: number,
+    updateBudgetDto: UpdateBudgetDto,
+  ) {
+    const budget = await this.findOne(id);
 
-    async findOne(id: number): Promise<Budget> {
-        const budget = await this.budgetsRepository.findOne({
-            where: { id },
-            relations: ['user'],
-        });
-        if (!budget) throw new NotFoundException(`Budget #${id} not found`);
-        return budget;
-    }
+    Object.assign(budget, updateBudgetDto);
 
-    async update(id: number, updateBudgetDto: UpdateBudgetDto): Promise<Budget> {
-        await this.findOne(id);
-        await this.budgetsRepository.update(id, updateBudgetDto);
-        return this.findOne(id);
-    }
+    return this.budgetRepository.save(budget);
+  }
 
-    async remove(id: number): Promise<{ message: string }> {
-        await this.findOne(id);
-        await this.budgetsRepository.delete(id);
-        return { message: `Budget #${id} deleted successfully` };
-    }
+  async remove(id: number) {
+    const budget = await this.findOne(id);
+
+    await this.budgetRepository.remove(budget);
+
+    return {
+      message: 'Xóa ngân sách thành công',
+    };
+  }
 }

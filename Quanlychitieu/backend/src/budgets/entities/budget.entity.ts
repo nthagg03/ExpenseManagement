@@ -1,30 +1,41 @@
 import {
-    Entity, PrimaryGeneratedColumn, Column,
-    CreateDateColumn, ManyToOne, JoinColumn
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
-@Entity('budgets')
+@Entity()
 export class Budget {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ nullable: true })
-    userId: number;
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+  })
+  amount: number;
 
-    @Column({ type: 'int' })
-    month: number;
+  @Column({
+    type: 'date',
+  })
+  startDate: string;
 
-    @Column({ type: 'int' })
-    year: number;
+  @Column({
+    type: 'date',
+  })
+  endDate: string;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2 })
-    limitAmount: number;
+  @Column()
+  categoryId: number;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @Column()
+  userId: number;
 
-    @ManyToOne(() => User, (user) => user.budgets, { nullable: true, onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'userId' })
-    user: User;
+  @ManyToOne(() => User, (user) => user.budgets, {
+    onDelete: 'CASCADE',
+  })
+  user: User;
 }
