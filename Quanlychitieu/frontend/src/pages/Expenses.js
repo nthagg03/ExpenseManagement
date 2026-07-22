@@ -486,7 +486,7 @@ function Expenses() {
                           : ''}
                       </td>
 
-                      <td className="text-end fw-semibold text-danger">
+                      <td className="text-end fw-semibold text-success">
                         {displayCurrency(expense.amount)}
                       </td>
 
