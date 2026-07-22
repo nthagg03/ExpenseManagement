@@ -9,9 +9,7 @@ import {
   Tooltip,
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
-
 import axiosClient from '../api/axiosClient';
-import { formatCurrency } from '../utils/formatCurrency';
 
 ChartJS.register(
   ArcElement,
@@ -26,24 +24,17 @@ function Dashboard() {
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
   const [budgets, setBudgets] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const currentUser = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem('current_user') || '{}');
-    } catch {
-      return {};
-    }
-  }, []);
-
   const getArrayData = (response) => {
-    if (Array.isArray(response?.data)) {
+    if (Array.isArray(response.data)) {
       return response.data;
     }
 
-    if (Array.isArray(response?.data?.data)) {
+    if (Array.isArray(response.data?.data)) {
       return response.data.data;
     }
 
@@ -51,41 +42,36 @@ function Dashboard() {
   };
 
   const fetchDashboardData = useCallback(async () => {
-    setLoading(true);
-    setError('');
-
     try {
-      const results = await Promise.allSettled([
+      setLoading(true);
+      setError('');
+
+      const [
+        expensesResponse,
+        incomesResponse,
+        budgetsResponse,
+        categoriesResponse,
+      ] = await Promise.all([
         axiosClient.get('/expenses'),
         axiosClient.get('/incomes'),
         axiosClient.get('/budgets'),
+        axiosClient.get('/categories'),
       ]);
 
-      const [expenseResult, incomeResult, budgetResult] = results;
+      setExpenses(getArrayData(expensesResponse));
+      setIncomes(getArrayData(incomesResponse));
+      setBudgets(getArrayData(budgetsResponse));
+      setCategories(getArrayData(categoriesResponse));
+    } catch (err) {
+      console.error('Lỗi tải Dashboard:', err);
 
-      if (expenseResult.status === 'fulfilled') {
-        setExpenses(getArrayData(expenseResult.value));
-      }
+      const responseMessage = err.response?.data?.message;
 
-      if (incomeResult.status === 'fulfilled') {
-        setIncomes(getArrayData(incomeResult.value));
-      }
-
-      if (budgetResult.status === 'fulfilled') {
-        setBudgets(getArrayData(budgetResult.value));
-      }
-
-      const allFailed = results.every(
-        (result) => result.status === 'rejected',
+      setError(
+        Array.isArray(responseMessage)
+          ? responseMessage.join(', ')
+          : responseMessage || 'Không thể tải dữ liệu Dashboard.',
       );
-
-      if (allFailed) {
-        setError(
-          'Không thể tải dữ liệu. Hãy kiểm tra backend và quyền truy cập API.',
-        );
-      }
-    } catch {
-      setError('Có lỗi xảy ra khi tải Dashboard.');
     } finally {
       setLoading(false);
     }
@@ -95,199 +81,219 @@ function Dashboard() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  const formatCurrency = (value) => {
+    return Number(value || 0).toLocaleString('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    });
+  };
+
+  const formatDate = (value) => {
+    if (!value) {
+      return '';
+    }
+
+    const dateString = String(value).slice(0, 10);
+    const [year, month, day] = dateString.split('-');
+
+    return `${day}/${month}/${year}`;
+  };
+
   const totalIncome = useMemo(() => {
     return incomes.reduce(
-      (total, item) => total + Number(item.amount || 0),
+      (total, income) => total + Number(income.amount || 0),
       0,
     );
   }, [incomes]);
 
   const totalExpense = useMemo(() => {
     return expenses.reduce(
-      (total, item) => total + Number(item.amount || 0),
+      (total, expense) => total + Number(expense.amount || 0),
       0,
     );
   }, [expenses]);
 
-  const balance = totalIncome - totalExpense;
-
   const totalBudget = useMemo(() => {
     return budgets.reduce(
-      (total, item) =>
-        total +
-        Number(
-          item.amount ??
-            item.limitAmount ??
-            item.budgetAmount ??
-            0,
-        ),
+      (total, budget) => total + Number(budget.amount || 0),
       0,
     );
   }, [budgets]);
 
-  const getItemDate = (item) => {
-    return (
-      item.expenseDate ||
-      item.incomeDate ||
-      item.date ||
-      item.createdAt ||
-      null
+  const balance = totalIncome - totalExpense;
+
+  const budgetUsedPercent =
+    totalBudget > 0
+      ? Math.round((totalExpense / totalBudget) * 100)
+      : 0;
+
+  const getCategoryName = useCallback(
+  (item) => {
+    if (item.category?.name) {
+      return item.category.name;
+    }
+
+    const category = categories.find(
+      (categoryItem) =>
+        Number(categoryItem.id) === Number(item.categoryId),
     );
-  };
 
-  const recentTransactions = useMemo(() => {
-    const normalizedExpenses = expenses.map((item) => ({
-      ...item,
-      transactionType: 'expense',
-      displayName:
-        item.description ||
-        item.name ||
-        item.title ||
-        'Khoản chi',
-      transactionDate: getItemDate(item),
-    }));
+    return category?.name || 'Chưa phân loại';
+  },
+  [categories],
+);
 
-    const normalizedIncomes = incomes.map((item) => ({
-      ...item,
-      transactionType: 'income',
-      displayName:
-        item.description ||
-        item.name ||
-        item.title ||
-        item.source ||
-        'Khoản thu',
-      transactionDate: getItemDate(item),
-    }));
+  const expenseByCategory = useMemo(() => {
+    const result = {};
 
-    return [...normalizedExpenses, ...normalizedIncomes]
-      .sort((a, b) => {
-        const dateA = a.transactionDate
-          ? new Date(a.transactionDate).getTime()
-          : 0;
+    expenses.forEach((expense) => {
+      const categoryName = getCategoryName(expense);
 
-        const dateB = b.transactionDate
-          ? new Date(b.transactionDate).getTime()
-          : 0;
+      result[categoryName] =
+        (result[categoryName] || 0) +
+        Number(expense.amount || 0);
+    });
 
-        return dateB - dateA;
-      })
-      .slice(0, 6);
-  }, [expenses, incomes]);
+    return result;
+  }, [expenses, getCategoryName]);
 
-  const getMonthValue = (items, monthIndex) => {
-    const currentYear = new Date().getFullYear();
-
-    return items
-      .filter((item) => {
-        const itemDate = getItemDate(item);
-
-        if (!itemDate) {
-          return false;
-        }
-
-        const date = new Date(itemDate);
-
-        return (
-          date.getFullYear() === currentYear &&
-          date.getMonth() === monthIndex
-        );
-      })
-      .reduce(
-        (total, item) => total + Number(item.amount || 0),
-        0,
-      );
-  };
-
-  const monthlyChartData = useMemo(() => {
-    const months = [
-      'T1',
-      'T2',
-      'T3',
-      'T4',
-      'T5',
-      'T6',
-      'T7',
-      'T8',
-      'T9',
-      'T10',
-      'T11',
-      'T12',
-    ];
-
-    return {
-      labels: months,
-      datasets: [
-        {
-          label: 'Thu nhập',
-          data: months.map((_, index) =>
-            getMonthValue(incomes, index),
-          ),
-          backgroundColor: 'rgba(25, 135, 84, 0.75)',
-          borderRadius: 6,
-        },
-        {
-          label: 'Chi tiêu',
-          data: months.map((_, index) =>
-            getMonthValue(expenses, index),
-          ),
-          backgroundColor: 'rgba(220, 53, 69, 0.75)',
-          borderRadius: 6,
-        },
-      ],
-    };
-  }, [expenses, incomes]);
-
-  const doughnutData = {
-    labels: ['Thu nhập', 'Chi tiêu'],
+  const barChartData = {
+    labels: ['Tổng thu', 'Tổng chi', 'Số dư', 'Ngân sách'],
     datasets: [
       {
-        data: [totalIncome, totalExpense],
-        backgroundColor: [
-          'rgba(25, 135, 84, 0.82)',
-          'rgba(220, 53, 69, 0.82)',
+        label: 'Số tiền',
+        data: [
+          totalIncome,
+          totalExpense,
+          Math.max(balance, 0),
+          totalBudget,
         ],
-        borderWidth: 0,
+        backgroundColor: [
+          'rgba(25, 135, 84, 0.75)',
+          'rgba(220, 53, 69, 0.75)',
+          'rgba(13, 110, 253, 0.75)',
+          'rgba(255, 193, 7, 0.75)',
+        ],
+        borderRadius: 8,
       },
     ],
   };
 
-  const formatDate = (value) => {
-    if (!value) {
-      return 'Chưa có ngày';
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-
-    return date.toLocaleDateString('vi-VN');
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => formatCurrency(context.raw),
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value) =>
+            Number(value).toLocaleString('vi-VN'),
+        },
+      },
+    },
   };
+
+  const doughnutChartData = {
+    labels: Object.keys(expenseByCategory),
+    datasets: [
+      {
+        label: 'Chi tiêu',
+        data: Object.values(expenseByCategory),
+        backgroundColor: [
+          '#0d6efd',
+          '#dc3545',
+          '#198754',
+          '#ffc107',
+          '#6f42c1',
+          '#0dcaf0',
+          '#fd7e14',
+          '#6c757d',
+        ],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+      },
+    ],
+  };
+
+  const doughnutChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            return `${context.label}: ${formatCurrency(
+              context.raw,
+            )}`;
+          },
+        },
+      },
+    },
+  };
+
+  const recentTransactions = useMemo(() => {
+    const incomeTransactions = incomes.map((income) => ({
+      id: `income-${income.id}`,
+      originalId: income.id,
+      description: income.description || 'Khoản thu',
+      amount: Number(income.amount || 0),
+      date: income.incomeDate,
+      categoryName: getCategoryName(income),
+      type: 'income',
+    }));
+
+    const expenseTransactions = expenses.map((expense) => ({
+      id: `expense-${expense.id}`,
+      originalId: expense.id,
+      description: expense.description || 'Khoản chi',
+      amount: Number(expense.amount || 0),
+      date: expense.expenseDate,
+      categoryName: getCategoryName(expense),
+      type: 'expense',
+    }));
+
+    return [...incomeTransactions, ...expenseTransactions]
+      .sort((firstItem, secondItem) => {
+        return new Date(secondItem.date) - new Date(firstItem.date);
+      })
+      .slice(0, 8);
+  }, [incomes, expenses, getCategoryName]);
 
   if (loading) {
     return (
-      <div className="dashboard-loading">
-        <div
-          className="spinner-border text-primary"
-          role="status"
-        />
-        <p>Đang tải dữ liệu Dashboard...</p>
+      <div className="d-flex flex-column align-items-center justify-content-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Đang tải...</span>
+        </div>
+
+        <p className="text-muted mt-3">
+          Đang tải dữ liệu tổng quan...
+        </p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="dashboard-header">
+    <div className="container-fluid">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-          <h2>
-            Xin chào,{' '}
-            {currentUser.username || 'Người dùng'}
-          </h2>
+          <h2 className="fw-bold mb-1">Tổng quan tài chính</h2>
 
-          <p>
-            Tổng quan tình hình tài chính cá nhân của bạn.
+          <p className="text-muted mb-0">
+            Theo dõi thu nhập, chi tiêu và ngân sách của bạn.
           </p>
         </div>
 
@@ -302,258 +308,301 @@ function Dashboard() {
       </div>
 
       {error && (
-        <div className="alert alert-warning">{error}</div>
+        <div className="alert alert-danger">{error}</div>
       )}
 
-      <div className="row g-4">
-        <div className="col-xl-3 col-md-6">
-          <div className="stat-card stat-income">
-            <div className="stat-icon">
-              <i className="bi bi-arrow-up-right" />
-            </div>
+      <div className="row g-4 mb-4">
+        <SummaryCard
+          title="Tổng thu nhập"
+          value={formatCurrency(totalIncome)}
+          icon="bi-wallet2"
+          color="success"
+          description={`${incomes.length} khoản thu`}
+        />
 
-            <div>
-              <p>Tổng thu nhập</p>
-              <h3>{formatCurrency(totalIncome)}</h3>
-              <span>{incomes.length} khoản thu</span>
-            </div>
-          </div>
-        </div>
+        <SummaryCard
+          title="Tổng chi tiêu"
+          value={formatCurrency(totalExpense)}
+          icon="bi-credit-card"
+          color="danger"
+          description={`${expenses.length} khoản chi`}
+        />
 
-        <div className="col-xl-3 col-md-6">
-          <div className="stat-card stat-expense">
-            <div className="stat-icon">
-              <i className="bi bi-arrow-down-right" />
-            </div>
+        <SummaryCard
+          title="Số dư hiện tại"
+          value={formatCurrency(balance)}
+          icon="bi-cash-stack"
+          color={balance >= 0 ? 'primary' : 'danger'}
+          description={
+            balance >= 0
+              ? 'Tài chính đang dương'
+              : 'Chi tiêu vượt thu nhập'
+          }
+        />
 
-            <div>
-              <p>Tổng chi tiêu</p>
-              <h3>{formatCurrency(totalExpense)}</h3>
-              <span>{expenses.length} khoản chi</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-xl-3 col-md-6">
-          <div className="stat-card stat-balance">
-            <div className="stat-icon">
-              <i className="bi bi-wallet2" />
-            </div>
-
-            <div>
-              <p>Số dư hiện tại</p>
-              <h3>{formatCurrency(balance)}</h3>
-              <span>
-                {balance >= 0
-                  ? 'Tài chính đang dương'
-                  : 'Chi tiêu vượt thu nhập'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-xl-3 col-md-6">
-          <div className="stat-card stat-budget">
-            <div className="stat-icon">
-              <i className="bi bi-pie-chart" />
-            </div>
-
-            <div>
-              <p>Tổng ngân sách</p>
-              <h3>{formatCurrency(totalBudget)}</h3>
-              <span>{budgets.length} ngân sách</span>
-            </div>
-          </div>
-        </div>
+        <SummaryCard
+          title="Tổng ngân sách"
+          value={formatCurrency(totalBudget)}
+          icon="bi-bullseye"
+          color="warning"
+          description={`${budgets.length} ngân sách`}
+        />
       </div>
 
-      <div className="row g-4 mt-1">
-        <div className="col-xl-8">
-          <div className="dashboard-panel">
-            <div className="panel-heading">
-              <div>
-                <h5>Thu nhập và chi tiêu</h5>
-                <p>Thống kê theo từng tháng trong năm</p>
-              </div>
-            </div>
+      <div className="row g-4 mb-4">
+        <div className="col-12 col-xl-8">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4">
+              <div className="mb-4">
+                <h5 className="fw-bold mb-1">
+                  So sánh tài chính
+                </h5>
 
-            <div className="chart-large">
-              <Bar
-                data={monthlyChartData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: 'top',
-                    },
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback(value) {
-                          return new Intl.NumberFormat(
-                            'vi-VN',
-                            {
-                              notation: 'compact',
-                            },
-                          ).format(value);
-                        },
-                      },
-                    },
-                  },
-                }}
-              />
+                <p className="text-muted small mb-0">
+                  Tổng thu, tổng chi, số dư và ngân sách.
+                </p>
+              </div>
+
+              <div style={{ height: 340 }}>
+                <Bar
+                  data={barChartData}
+                  options={barChartOptions}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="col-xl-4">
-          <div className="dashboard-panel">
-            <div className="panel-heading">
-              <div>
-                <h5>Cơ cấu tài chính</h5>
-                <p>Tỷ lệ tổng thu và tổng chi</p>
-              </div>
-            </div>
+        <div className="col-12 col-xl-4">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4">
+              <h5 className="fw-bold mb-1">
+                Tiến độ ngân sách
+              </h5>
 
-            <div className="chart-doughnut">
-              {totalIncome === 0 && totalExpense === 0 ? (
-                <div className="empty-state">
-                  <i className="bi bi-pie-chart" />
-                  <p>Chưa có dữ liệu để hiển thị</p>
+              <p className="text-muted small">
+                Mức chi tiêu trên tổng hạn mức.
+              </p>
+
+              <div className="text-center py-4">
+                <div
+                  className={`display-5 fw-bold ${
+                    budgetUsedPercent > 100
+                      ? 'text-danger'
+                      : budgetUsedPercent >= 80
+                        ? 'text-warning'
+                        : 'text-primary'
+                  }`}
+                >
+                  {budgetUsedPercent}%
                 </div>
-              ) : (
-                <Doughnut
-                  data={doughnutData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                      legend: {
-                        position: 'bottom',
-                      },
-                    },
+
+                <p className="text-muted mb-0">
+                  Đã sử dụng ngân sách
+                </p>
+              </div>
+
+              <div
+                className="progress mb-3"
+                style={{ height: 14 }}
+              >
+                <div
+                  className={`progress-bar ${
+                    budgetUsedPercent > 100
+                      ? 'bg-danger'
+                      : budgetUsedPercent >= 80
+                        ? 'bg-warning'
+                        : 'bg-primary'
+                  }`}
+                  style={{
+                    width: `${Math.min(
+                      budgetUsedPercent,
+                      100,
+                    )}%`,
                   }}
                 />
+              </div>
+
+              <div className="d-flex justify-content-between small">
+                <span className="text-muted">Đã chi</span>
+                <strong>{formatCurrency(totalExpense)}</strong>
+              </div>
+
+              <div className="d-flex justify-content-between small mt-2">
+                <span className="text-muted">Ngân sách</span>
+                <strong>{formatCurrency(totalBudget)}</strong>
+              </div>
+
+              {totalBudget === 0 && (
+                <div className="alert alert-light border mt-4 mb-0">
+                  Chưa có ngân sách được thiết lập.
+                </div>
+              )}
+
+              {budgetUsedPercent > 100 && (
+                <div className="alert alert-danger mt-4 mb-0">
+                  <i className="bi bi-exclamation-triangle me-2" />
+                  Bạn đã vượt ngân sách.
+                </div>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="dashboard-panel mt-4">
-        <div className="panel-heading">
-          <div>
-            <h5>Giao dịch gần đây</h5>
-            <p>Các khoản thu và chi mới nhất</p>
+      <div className="row g-4">
+        <div className="col-12 col-xl-5">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4">
+              <h5 className="fw-bold mb-1">
+                Chi tiêu theo danh mục
+              </h5>
+
+              <p className="text-muted small">
+                Phân bổ chi tiêu của bạn.
+              </p>
+
+              {Object.keys(expenseByCategory).length === 0 ? (
+                <div className="text-center py-5">
+                  <i className="bi bi-pie-chart display-4 text-muted" />
+                  <p className="text-muted mt-3 mb-0">
+                    Chưa có dữ liệu chi tiêu.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ height: 360 }}>
+                  <Doughnut
+                    data={doughnutChartData}
+                    options={doughnutChartOptions}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="table-responsive">
-          <table className="table transaction-table align-middle">
-            <thead>
-              <tr>
-                <th>Nội dung</th>
-                <th>Loại giao dịch</th>
-                <th>Ngày</th>
-                <th className="text-end">Số tiền</th>
-              </tr>
-            </thead>
+        <div className="col-12 col-xl-7">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4">
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                  <h5 className="fw-bold mb-1">
+                    Giao dịch gần đây
+                  </h5>
 
-            <tbody>
+                  <p className="text-muted small mb-0">
+                    Các khoản thu và chi mới nhất.
+                  </p>
+                </div>
+
+                <span className="badge text-bg-light border">
+                  {recentTransactions.length} giao dịch
+                </span>
+              </div>
+
               {recentTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan="4">
-                    <div className="empty-table">
-                      <i className="bi bi-receipt" />
-                      <p>Chưa có giao dịch nào.</p>
-                    </div>
-                  </td>
-                </tr>
+                <div className="text-center py-5">
+                  <i className="bi bi-receipt display-4 text-muted" />
+                  <p className="text-muted mt-3 mb-0">
+                    Chưa có giao dịch nào.
+                  </p>
+                </div>
               ) : (
-                recentTransactions.map(
-                  (transaction, index) => (
-                    <tr
-                      key={`${transaction.transactionType}-${transaction.id || index}`}
+                <div className="list-group list-group-flush">
+                  {recentTransactions.map((transaction) => (
+                    <div
+                      className="list-group-item px-0 py-3"
+                      key={transaction.id}
                     >
-                      <td>
-                        <div className="transaction-name">
-                          <div
-                            className={
-                              transaction.transactionType ===
-                              'income'
-                                ? 'transaction-symbol income-symbol'
-                                : 'transaction-symbol expense-symbol'
-                            }
-                          >
-                            <i
-                              className={
-                                transaction.transactionType ===
-                                'income'
-                                  ? 'bi bi-arrow-up-right'
-                                  : 'bi bi-arrow-down-right'
-                              }
-                            />
+                      <div className="d-flex align-items-center gap-3">
+                        <div
+                          className={`rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${
+                            transaction.type === 'income'
+                              ? 'bg-success-subtle text-success'
+                              : 'bg-danger-subtle text-danger'
+                          }`}
+                          style={{
+                            width: 46,
+                            height: 46,
+                          }}
+                        >
+                          <i
+                            className={`bi ${
+                              transaction.type === 'income'
+                                ? 'bi-arrow-down-left'
+                                : 'bi-arrow-up-right'
+                            } fs-5`}
+                          />
+                        </div>
+
+                        <div className="flex-grow-1 overflow-hidden">
+                          <div className="fw-semibold text-truncate">
+                            {transaction.description}
                           </div>
 
-                          <div>
-                            <strong>
-                              {transaction.displayName}
-                            </strong>
-                            <small>
-                              {transaction.category?.name ||
-                                transaction.category ||
-                                'Không có danh mục'}
-                            </small>
+                          <div className="small text-muted">
+                            {transaction.categoryName}
+                            {' · '}
+                            {formatDate(transaction.date)}
                           </div>
                         </div>
-                      </td>
 
-                      <td>
-                        <span
-                          className={
-                            transaction.transactionType ===
-                            'income'
-                              ? 'badge text-bg-success'
-                              : 'badge text-bg-danger'
-                          }
+                        <div
+                          className={`fw-bold text-nowrap ${
+                            transaction.type === 'income'
+                              ? 'text-success'
+                              : 'text-danger'
+                          }`}
                         >
-                          {transaction.transactionType ===
-                          'income'
-                            ? 'Thu nhập'
-                            : 'Chi tiêu'}
-                        </span>
-                      </td>
-
-                      <td>
-                        {formatDate(
-                          transaction.transactionDate,
-                        )}
-                      </td>
-
-                      <td
-                        className={
-                          transaction.transactionType ===
-                          'income'
-                            ? 'text-end transaction-amount income-amount'
-                            : 'text-end transaction-amount expense-amount'
-                        }
-                      >
-                        {transaction.transactionType ===
-                        'income'
-                          ? '+'
-                          : '-'}
-                        {formatCurrency(transaction.amount)}
-                      </td>
-                    </tr>
-                  ),
-                )
+                          {transaction.type === 'income'
+                            ? '+'
+                            : '-'}
+                          {formatCurrency(transaction.amount)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  value,
+  icon,
+  color,
+  description,
+}) {
+  return (
+    <div className="col-12 col-sm-6 col-xl-3">
+      <div className="card border-0 shadow-sm rounded-4 h-100">
+        <div className="card-body p-4">
+          <div className="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <p className="text-muted small mb-2">{title}</p>
+
+              <h4 className="fw-bold mb-2">{value}</h4>
+
+              <small className="text-muted">{description}</small>
+            </div>
+
+            <div
+              className={`rounded-3 bg-${color}-subtle text-${color} d-flex align-items-center justify-content-center`}
+              style={{
+                width: 50,
+                height: 50,
+                flexShrink: 0,
+              }}
+            >
+              <i className={`bi ${icon} fs-4`} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

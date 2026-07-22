@@ -1,4 +1,9 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom';
 
 import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -11,8 +16,6 @@ import Incomes from './pages/Incomes';
 import Categories from './pages/Categories';
 import Budgets from './pages/Budgets';
 
-import './App.css';
-
 function App() {
   return (
     <BrowserRouter>
@@ -20,18 +23,17 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/incomes" element={<Incomes />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/budgets" element={<Budgets />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/incomes" element={<Incomes />} />
+            <Route
+              path="/categories"
+              element={<Categories />}
+            />
+            <Route path="/budgets" element={<Budgets />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

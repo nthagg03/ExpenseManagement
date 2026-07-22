@@ -1,52 +1,75 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+
+const menuItems = [
+  {
+    path: '/',
+    label: 'Tổng quan',
+    icon: 'bi-grid',
+    end: true,
+  },
+  {
+    path: '/expenses',
+    label: 'Chi tiêu',
+    icon: 'bi-credit-card',
+  },
+  {
+    path: '/incomes',
+    label: 'Thu nhập',
+    icon: 'bi-wallet2',
+  },
+  {
+    path: '/categories',
+    label: 'Danh mục',
+    icon: 'bi-folder2-open',
+  },
+  {
+    path: '/budgets',
+    label: 'Ngân sách',
+    icon: 'bi-bullseye',
+  },
+];
 
 function Sidebar() {
-  const navigate = useNavigate();
-
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('current_user');
-    navigate('/login');
-  };
-
   return (
-    <aside className="sidebar">
+    <aside className="app-sidebar">
       <div className="sidebar-brand">
-        <i className="bi bi-wallet2" />
-        <span>Expense App</span>
+        <div className="brand-icon">
+          <i className="bi bi-wallet2" />
+        </div>
+
+        <div>
+          <div className="brand-title">Expense Manager</div>
+          <div className="brand-subtitle">Quản lý tài chính</div>
+        </div>
       </div>
 
       <nav className="sidebar-menu">
-        <NavLink to="/" end>
-          <i className="bi bi-grid" />
-          Dashboard
-        </NavLink>
+        <div className="sidebar-label">MENU CHÍNH</div>
 
-        <NavLink to="/expenses">
-          <i className="bi bi-cash-stack" />
-          Chi tiêu
-        </NavLink>
-
-        <NavLink to="/incomes">
-          <i className="bi bi-graph-up-arrow" />
-          Thu nhập
-        </NavLink>
-
-        <NavLink to="/categories">
-          <i className="bi bi-tags" />
-          Danh mục
-        </NavLink>
-
-        <NavLink to="/budgets">
-          <i className="bi bi-pie-chart" />
-          Ngân sách
-        </NavLink>
+        {menuItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.end}
+            className={({ isActive }) =>
+              `sidebar-link ${isActive ? 'active' : ''}`
+            }
+          >
+            <i className={`bi ${item.icon}`} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
       </nav>
 
-      <button className="sidebar-logout" onClick={logout}>
-        <i className="bi bi-box-arrow-left" />
-        Đăng xuất
-      </button>
+      <div className="sidebar-footer">
+        <div className="small text-white-50">
+          Expense Management
+        </div>
+
+        <div className="small text-white-50">
+          Phiên bản 1.0
+        </div>
+      </div>
     </aside>
   );
 }

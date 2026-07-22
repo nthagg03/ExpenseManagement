@@ -46,7 +46,7 @@ function Expenses() {
       console.error('Lỗi lấy danh sách khoản chi:', err);
       setError(
         err.response?.data?.message ||
-          'Không thể tải danh sách khoản chi.',
+        'Không thể tải danh sách khoản chi.',
       );
     }
   }, []);
@@ -64,7 +64,7 @@ function Expenses() {
       console.error('Lỗi lấy danh mục:', err);
       setError(
         err.response?.data?.message ||
-          'Không thể tải danh sách danh mục.',
+        'Không thể tải danh sách danh mục.',
       );
     }
   }, []);
@@ -215,7 +215,7 @@ function Expenses() {
 
       setError(
         err.response?.data?.message ||
-          'Không thể xóa khoản chi.',
+        'Không thể xóa khoản chi.',
       );
     }
   };
@@ -481,12 +481,12 @@ function Expenses() {
                       <td>
                         {expense.expenseDate
                           ? new Date(
-                              expense.expenseDate,
-                            ).toLocaleDateString('vi-VN')
+                            expense.expenseDate,
+                          ).toLocaleDateString('vi-VN')
                           : ''}
                       </td>
 
-                      <td className="text-end fw-semibold text-success">
+                      <td className="text-end fw-semibold text-danger">
                         {displayCurrency(expense.amount)}
                       </td>
 

@@ -9,7 +9,7 @@ const initialForm = {
   categoryId: '',
 };
 
-function incomes() {
+function Incomes() {
   const [incomes, setincomes] = useState([]);
   const [categories, setCategories] = useState([]);
 
@@ -43,10 +43,10 @@ function incomes() {
 
       setincomes(data);
     } catch (err) {
-      console.error('Lỗi lấy danh sách Khoản thu:', err);
+      console.error('Lỗi lấy danh sách khoản nhận:', err);
       setError(
         err.response?.data?.message ||
-          'Không thể tải danh sách Khoản thu.',
+        'Không thể tải danh sách khoản nhận.',
       );
     }
   }, []);
@@ -64,7 +64,7 @@ function incomes() {
       console.error('Lỗi lấy danh mục:', err);
       setError(
         err.response?.data?.message ||
-          'Không thể tải danh sách danh mục.',
+        'Không thể tải danh sách danh mục.',
       );
     }
   }, []);
@@ -103,7 +103,7 @@ function incomes() {
     setMessage('');
 
     if (!form.description.trim()) {
-      setError('Vui lòng nhập nội dung Khoản thu.');
+      setError('Vui lòng nhập nội dung khoản nhận.');
       return;
     }
 
@@ -113,7 +113,7 @@ function incomes() {
     }
 
     if (!form.incomeDate) {
-      setError('Vui lòng chọn Ngày thu.');
+      setError('Vui lòng chọn ngày nhận.');
       return;
     }
 
@@ -140,23 +140,23 @@ function incomes() {
 
       if (editingId) {
         await axiosClient.patch(`/incomes/${editingId}`, payload);
-        setMessage('Cập nhật Khoản thu thành công.');
+        setMessage('Cập nhật khoản nhận thành công.');
       } else {
         await axiosClient.post('/incomes', payload);
-        setMessage('Thêm Khoản thu thành công.');
+        setMessage('Thêm khoản nhận thành công.');
       }
 
       resetForm();
       await fetchincomes();
     } catch (err) {
-      console.error('Lỗi lưu Khoản thu:', err);
+      console.error('Lỗi lưu khoản nhận:', err);
 
       const responseMessage = err.response?.data?.message;
 
       setError(
         Array.isArray(responseMessage)
           ? responseMessage.join(', ')
-          : responseMessage || 'Không thể lưu Khoản thu.',
+          : responseMessage || 'Không thể lưu khoản nhận.',
       );
     } finally {
       setSubmitting(false);
@@ -190,7 +190,7 @@ function incomes() {
 
   const handleDelete = async (id) => {
     const confirmed = window.confirm(
-      'Bạn có chắc chắn muốn xóa Khoản thu này không?',
+      'Bạn có chắc chắn muốn xóa khoản nhận này không?',
     );
 
     if (!confirmed) {
@@ -203,7 +203,7 @@ function incomes() {
 
       await axiosClient.delete(`/incomes/${id}`);
 
-      setMessage('Xóa Khoản thu thành công.');
+      setMessage('Xóa khoản nhận thành công.');
 
       if (editingId === id) {
         resetForm();
@@ -211,11 +211,11 @@ function incomes() {
 
       await fetchincomes();
     } catch (err) {
-      console.error('Lỗi xóa Khoản thu:', err);
+      console.error('Lỗi xóa khoản nhận:', err);
 
       setError(
         err.response?.data?.message ||
-          'Không thể xóa Khoản thu.',
+        'Không thể xóa khoản nhận.',
       );
     }
   };
@@ -260,9 +260,9 @@ function incomes() {
     <div className="container-fluid">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="mb-1">Quản lý thu nhập</h2>
+          <h2 className="mb-1">Quản lý thu thập</h2>
           <p className="text-muted mb-0">
-            Thêm, sửa và theo dõi các Khoản thu của bạn.
+            Thêm, sửa và theo dõi các khoản thu nhập của bạn.
           </p>
         </div>
       </div>
@@ -302,7 +302,7 @@ function incomes() {
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
           <h5 className="card-title mb-3">
-            {editingId ? 'Cập nhật Khoản thu' : 'Thêm Khoản thu'}
+            {editingId ? 'Cập nhật khoản nhận' : 'Thêm khoản nhận'}
           </h5>
 
           <form onSubmit={handleSubmit}>
@@ -312,7 +312,7 @@ function incomes() {
                   htmlFor="description"
                   className="form-label"
                 >
-                  Nội dung chi
+                  Nội dung nhận
                 </label>
 
                 <input
@@ -352,7 +352,7 @@ function incomes() {
                   htmlFor="incomeDate"
                   className="form-label"
                 >
-                  Ngày thu
+                  Ngày nhận
                 </label>
 
                 <input
@@ -405,7 +405,7 @@ function incomes() {
                     ? 'Đang lưu...'
                     : editingId
                       ? 'Lưu thay đổi'
-                      : 'Thêm Khoản thu'}
+                      : 'Thêm khoản nhận'}
                 </button>
 
                 {editingId && (
@@ -428,7 +428,7 @@ function incomes() {
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="card-title mb-0">
-              Danh sách Khoản thu
+              Danh sách khoản nhận
             </h5>
 
             <span className="badge text-bg-secondary">
@@ -449,7 +449,7 @@ function incomes() {
             </div>
           ) : incomes.length === 0 ? (
             <div className="alert alert-light text-center mb-0">
-              Chưa có Khoản thu nào.
+              Chưa có khoản nhận nào.
             </div>
           ) : (
             <div className="table-responsive">
@@ -459,7 +459,7 @@ function incomes() {
                     <th>#</th>
                     <th>Nội dung</th>
                     <th>Danh mục</th>
-                    <th>Ngày thu</th>
+                    <th>Ngày nhận</th>
                     <th className="text-end">Số tiền</th>
                     <th className="text-center">Thao tác</th>
                   </tr>
@@ -481,12 +481,12 @@ function incomes() {
                       <td>
                         {income.incomeDate
                           ? new Date(
-                              income.incomeDate,
-                            ).toLocaleDateString('vi-VN')
+                            income.incomeDate,
+                          ).toLocaleDateString('vi-VN')
                           : ''}
                       </td>
 
-                      <td className="text-end fw-semibold text-danger">
+                      <td className="text-end fw-semibold text-success">
                         {displayCurrency(income.amount)}
                       </td>
 
@@ -523,4 +523,4 @@ function incomes() {
   );
 }
 
-export default incomes;
+export default Incomes;
