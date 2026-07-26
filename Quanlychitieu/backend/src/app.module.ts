@@ -11,7 +11,6 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { AuthModule } from './auth/auth.module';
 import { IncomesModule } from './incomes/incomes.module';
-import { ExpenseModule } from './expense/expense.module';
 
 @Module({
   imports: [
@@ -41,8 +40,6 @@ import { ExpenseModule } from './expense/expense.module';
     BudgetsModule,
     IncomesModule,
     AuthModule,
-
-    ExpenseModule,
   ],
   controllers: [AppController],
   providers: [AppService],
