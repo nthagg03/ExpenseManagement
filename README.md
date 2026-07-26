@@ -1,10 +1,10 @@
 # Ứng dụng quản lý chi tiêu cá nhân 
-> **Dự án cuối kỳ môn Lập Trình Web**  
-> Nhóm TnT – K18 – Năm học 2026  
+> **Dự án cuối kỳ môn Lập Trình Web nâng cao**  
+> Nhóm I'm back – K18 – Năm học 2026  
 > Giảng viên hướng dẫn: TS. Nguyễn Lệ Thu
 
 
-Dự án **Ứng dụng quản lý chi tiêu cá nhân** được phát triển bằng ngôn ngữ Typescript với framework NestJS, là bài tập lớn cho môn học Lập trình Web. Ứng dụng cung cấp các chức năng cơ bản để quản lý chi tiêu cá nhân.
+Dự án **Ứng dụng quản lý chi tiêu cá nhân** được phát triển theo mô hình Client – Server, là bài tập lớn cho môn học Lập trình Web. Ứng dụng cung cấp các chức năng cơ bản để quản lý chi tiêu cá nhân.
 
 --- 
 ## 🎯 Giới thiệu
@@ -43,97 +43,175 @@ Hệ thống được thiết kế để giải quyết các bài toán cơ bả
 
 ## 🏗️ Phân tích và Thiết kế
 
-Dưới đây là cấu trúc các đối tượng chính trong hệ thống:
+Hệ thống quản lý chi tiêu cá nhân được xây dựng theo mô hình hướng đối tượng (Object-Oriented Programming), gồm 05 đối tượng chính: **User**, **Expense**, **Income**, **Category** và **Budget**. Các đối tượng có mối quan hệ với nhau thông qua khóa ngoại và được ánh xạ với cơ sở dữ liệu bằng TypeORM.
+
+---
 
 <details>
-<summary><strong>👤 Người dùng (User)</strong></summary>
+<summary><strong>👤 User (Người dùng)</strong></summary>
 
-**Thuộc tính:**
+### Thuộc tính
 
-**Phương thức:**
+| Thuộc tính | Kiểu dữ liệu | Mô tả |
+|------------|--------------|------|
+| id | number | Mã người dùng |
+| username | string | Tên đăng nhập |
+| email | string | Địa chỉ email |
+| password | string | Mật khẩu đã mã hóa |
+| createdAt | Date | Ngày tạo tài khoản |
+| updatedAt | Date | Ngày cập nhật |
+
+### Phương thức
+
+- `register()` : Đăng ký tài khoản mới.
+- `login()` : Đăng nhập hệ thống.
+- `logout()` : Đăng xuất tài khoản.
+- `findAll()` : Lấy danh sách người dùng.
+- `findOne(id)` : Lấy thông tin người dùng theo ID.
+- `update(id)` : Cập nhật thông tin người dùng.
+- `remove(id)` : Xóa người dùng.
+- `hashPassword()` : Mã hóa mật khẩu bằng bcrypt.
+- `validateUser()` : Kiểm tra thông tin đăng nhập.
+
+### Quan hệ
+
+- Một User có nhiều Expense.
+- Một User có nhiều Income.
+- Một User có nhiều Budget.
+- Một User có nhiều Category.
 
 </details>
 
+---
+
 <details>
-<summary><strong>💸 Chi tiêu (Expense)</strong></summary>
+<summary><strong>💸 Expense (Chi tiêu)</strong></summary>
 
-**Thuộc tính:**
-- `category`: Loại chi tiêu
-- `description`: Mô tả chi tiêu
-- `amount`: Số tiền chi tiêu
-- `date`: Ngày chi tiêu
+### Thuộc tính
 
-**Phương thức:**
-- `addExpense()`: Thêm chi tiêu mới
-- `updateExpense()`: Cập nhật thông tin chi tiêu
-- `deleteExpense()`: Xóa chi tiêu
-- `getExpense()`: Lấy danh sách chi tiêu
-- `getExpenseById()`: Lấy chi tiêu theo ID
-- `getExpenseByCategory()`: Lấy chi tiêu theo loại
-- `getExpenseByDate()`: Lấy chi tiêu theo ngày
+| Thuộc tính | Kiểu dữ liệu | Mô tả |
+|------------|--------------|------|
+| id | number | Mã chi tiêu |
+| description | string | Nội dung chi tiêu |
+| amount | decimal | Số tiền chi tiêu |
+| expenseDate | Date | Ngày phát sinh |
+| categoryId | number | Danh mục |
+| userId | number | Người tạo |
+
+### Phương thức
+
+- `createExpense()` : Thêm khoản chi mới.
+- `findAllExpenses()` : Lấy toàn bộ khoản chi.
+- `findExpenseById(id)` : Tìm khoản chi theo ID.
+- `updateExpense(id)` : Cập nhật khoản chi.
+- `deleteExpense(id)` : Xóa khoản chi.
+- `getExpenseByCategory()` : Lọc theo danh mục.
+- `getExpenseByDate()` : Lọc theo ngày.
+- `calculateTotalExpense()` : Tính tổng chi tiêu.
+
+### Quan hệ
+
+- Expense thuộc một User.
+- Expense thuộc một Category.
 
 </details>
 
+---
+
 <details>
-<summary><strong>📂 Category</strong></summary>
+<summary><strong>💰 Income (Thu nhập)</strong></summary>
 
-**Thuộc tính:**
-- `id`: ID danh mục (Khóa chính)
-- `name`: Tên danh mục
+### Thuộc tính
 
-**Phương thức:**
-- `createCategory()`: Tạo danh mục mới
-- `updateCategory()`: Cập nhật thông tin danh mục
-- `deleteCategory()`: Xóa danh mục
-- `getCategory()`: Lấy danh sách danh mục
-- `getCategoryById()`: Lấy danh mục theo ID
+| Thuộc tính | Kiểu dữ liệu | Mô tả |
+|------------|--------------|------|
+| id | number | Mã thu nhập |
+| description | string | Nội dung thu nhập |
+| amount | decimal | Số tiền thu |
+| incomeDate | Date | Ngày phát sinh |
+| categoryId | number | Danh mục |
+| userId | number | Người tạo |
+
+### Phương thức
+
+- `createIncome()` : Thêm khoản thu.
+- `findAllIncomes()` : Lấy danh sách thu nhập.
+- `findIncomeById(id)` : Tìm thu nhập theo ID.
+- `updateIncome(id)` : Cập nhật thu nhập.
+- `deleteIncome(id)` : Xóa thu nhập.
+- `getIncomeByCategory()` : Lọc theo danh mục.
+- `getIncomeByDate()` : Lọc theo ngày.
+- `calculateTotalIncome()` : Tính tổng thu nhập.
+
+### Quan hệ
+
+- Income thuộc một User.
+- Income thuộc một Category.
 
 </details>
 
+---
+
 <details>
-<summary><strong>Budget</strong></summary>
+<summary><strong>📂 Category (Danh mục)</strong></summary>
 
-**Thuộc tính:**
-- `budgetId`: ID ngân sách (Khóa chính)
-- `budgetName`: Tên ngân sách
-- `budgetAmount`: Số tiền ngân sách
-- `budgetCategory`: Loại ngân sách
-- `budgetRemaining`: Số tiền còn lại
-- `budgetSpent`: Số tiền đã chi
-- `budgetStatus`: Trạng thái (`PENDING`, `COMPLETED`, `FAILED`, `REFUNDED`)
-- `budgeTransactionId`: Mã giao dịch
+### Thuộc tính
 
-**Phương thức:**
-- `addBudget()`: Thêm ngân sách mới
-- `updateBudget()`: Cập nhật thông tin ngân sách
-- `deleteBudget()`: Xóa ngân sách
-- `getBudget()`: Lấy danh sách ngân sách
-- `getBudgetById()`: Lấy ngân sách theo ID
-- `getBudgetByCategory()`: Lấy ngân sách theo loại
-- `getBudgetByDate()`: Lấy ngân sách theo ngày
+| Thuộc tính | Kiểu dữ liệu | Mô tả |
+|------------|--------------|------|
+| id | number | Mã danh mục |
+| name | string | Tên danh mục |
+| description | string | Mô tả |
+| userId | number | Chủ sở hữu |
+
+### Phương thức
+
+- `createCategory()` : Thêm danh mục.
+- `findAllCategories()` : Lấy danh sách danh mục.
+- `findCategoryById(id)` : Lấy danh mục theo ID.
+- `updateCategory(id)` : Cập nhật danh mục.
+- `deleteCategory(id)` : Xóa danh mục.
+
+### Quan hệ
+
+- Một Category có nhiều Expense.
+- Một Category có nhiều Income.
+- Một Category có nhiều Budget.
+- Category thuộc một User.
 
 </details>
 
+---
+
 <details>
-<summary><strong>Income</strong></summary>
+<summary><strong>📈 Budget (Ngân sách)</strong></summary>
 
-**Thuộc tính:**
-- `incomeId`: ID thu nhập (Khóa chính)
-- `incomeName`: Tên thu nhập
-- `incomeAmount`: Số tiền thu nhập
-- `incomeCategory`: Loại thu nhập
-- `lastUpdated`: Ngày cập nhật cuối
-- `supplierId`: ID nhà cung cấp
-- `costPrice`: Giá vốn trung bình
+### Thuộc tính
 
-**Phương thức:**
-- `addIncome()`: Thêm thu nhập mới
-- `updateIncome()`: Cập nhật thông tin thu nhập
-- `deleteIncome()`: Xóa thu nhập
-- `getIncome()`: Lấy danh sách thu nhập
-- `getIncomeById()`: Lấy thu nhập theo ID
-- `getIncomeByCategory()`: Lấy thu nhập theo loại
-- `getIncomeByDate()`: Lấy thu nhập theo ngày
+| Thuộc tính | Kiểu dữ liệu | Mô tả |
+|------------|--------------|------|
+| id | number | Mã ngân sách |
+| amount | decimal | Số tiền ngân sách |
+| startDate | Date | Ngày bắt đầu |
+| endDate | Date | Ngày kết thúc |
+| categoryId | number | Danh mục áp dụng |
+| userId | number | Người tạo |
+
+### Phương thức
+
+- `createBudget()` : Tạo ngân sách.
+- `findAllBudgets()` : Lấy danh sách ngân sách.
+- `findBudgetById(id)` : Lấy ngân sách theo ID.
+- `updateBudget(id)` : Cập nhật ngân sách.
+- `deleteBudget(id)` : Xóa ngân sách.
+- `calculateRemainingBudget()` : Tính ngân sách còn lại.
+- `calculateSpentBudget()` : Tính số tiền đã sử dụng.
+- `checkBudgetStatus()` : Kiểm tra trạng thái ngân sách.
+
+### Quan hệ
+
+- Budget thuộc một User.
+- Budget thuộc một Category.
 
 </details>
 
@@ -145,16 +223,47 @@ Dưới đây là cấu trúc các đối tượng chính trong hệ thống:
 Quanlychitieu/
  ├─ backend/
  │   ├─ src/
- │   │   ├─ expense/
- │   │   ├─ income/
- │   │   ├─ budget/
- │   │   ├─ user/
+ │   │   ├─ auth/
+ │   │   ├─ expenses/
+ │   │   ├─ categories/
+ │   │   ├─ database/
+ │   │   ├─ incomes/
+ │   │   ├─ budgets/
+ │   │   ├─ users/
  │   │   ├─ main.ts
  │   │   ├─ app.module.ts
  │   │   ├─ app.controller.ts
  │   │   ├─ app.service.ts
  │   │   ├─ ...
- │   ├─ test/                                                                   # Thư mục chứa các lớp kiểm thử thủ công
+ │   ├─ test/
+ │   ├─ .env
+ │   ├─ ...
+ ├─ frontend/
+ │   ├─ src/
+ │   │   ├─ api/
+ │   │   │   ├─ axiosClient.js                                                 # Cấu hình Axios để kết nối Frontend với Backend.
+ │   │   ├─ components/
+ │   │   │   ├─ AppLayout.css
+ │   │   │   ├─ AppLayout.js
+ │   │   │   ├─ ProtectedRoute.js
+ │   │   │   ├─ Sidebar.js
+ │   │   │   ├─ Topbar.js
+ │   │   ├─ pages/
+ │   │   │   ├─ Budgets.js
+ │   │   │   ├─ Categories.js
+ │   │   │   ├─ Dashboard.js
+ │   │   │   ├─ Expenses.js
+ │   │   │   ├─ Incomes.js
+ │   │   │   ├─ Login.js
+ │   │   │   ├─ Register.js
+ │   │   ├─ utils/
+ │   │   │   ├─ auth.js
+ │   │   │   ├─ formatCurrency.js
+ │   │   ├─ App.css
+ │   │   ├─ App.js
+ │   │   ├─ index.css
+ │   │   ├─ ...
+ ├─ Img/                                                                        # chứa UML, activity diagram,...
 README.md                                                                       # Tài liệu mô tả dự án 
 ```
 
@@ -170,20 +279,31 @@ README.md                                                                       
 
 ## 🔁 Biểu đồ hoạt động (Activity Diagram)
 
-### 1. Chi tiêu
+### 1. Đăng nhập
+
+![login Diagram](Quanlychitieu/Img/expense.jpeg)
+
+### 2. Chi tiêu
+
 ![expense Diagram](Quanlychitieu/Img/expense.jpeg)
 
-### 2. 
+### 3. Thu nhập
 
-### 3. 
+![expense Diagram](Quanlychitieu/Img/expense.jpeg)
 
-### 4. 
+### 4. Quản lý danh mục
 
-### 5. 
+![expense Diagram](Quanlychitieu/Img/expense.jpeg)
+
+### 5. Quản lý ngân sách
+
+![expense Diagram](Quanlychitieu/Img/expense.jpeg)
 
 --- 
 
 ## 🖼️ Giao diện chương trình (Console)
+
+
 
 --- 
 
@@ -191,7 +311,33 @@ README.md                                                                       
 
 - Ngôn ngữ lập trình: **Typescript**
 - Framework: [NestJS](https://nestjs.com/)
+- Frontend
 
+- ReactJS
+
+- React Router DOM
+
+- Axios
+
+- Bootstrap 5
+
+- Chart.js
+
+Backend
+
+- NestJS
+
+- TypeScript
+
+- JWT
+
+- bcrypt
+
+- TypeORM
+
+Database
+
+- MySQL
 --- 
 
 ## 📚 Tài liệu tham khảo
@@ -222,5 +368,5 @@ PORT=3000
 4. Chạy server
 npm run start:dev
 
-> © 2026 Nhóm TnT    
+> © 2026 Nhóm I'm back    
 > *Ứng dụng quản lý chi tiêu – Mã nguồn mở cho mục đích học tập*
