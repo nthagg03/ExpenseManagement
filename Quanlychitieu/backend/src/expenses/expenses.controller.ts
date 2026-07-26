@@ -1,42 +1,78 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
-import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('expenses')
 @UseGuards(JwtAuthGuard)
 export class ExpensesController {
-    constructor(private readonly expensesService: ExpensesService) {}
+  constructor(
+    private readonly expensesService: ExpensesService,
+  ) {}
 
-    @Post()
-    create(@Body() createExpenseDto: CreateExpenseDto) {
-        return this.expensesService.create(createExpenseDto);
-    }
+  @Post()
+  create(
+    @Body() dto: CreateExpenseDto,
+    @Req() request: any,
+  ) {
+    return this.expensesService.create(
+      dto,
+      request.user.userId,
+    );
+  }
 
-    @Get()
-    findAll() {
-        return this.expensesService.findAll();
-    }
+  @Get()
+  findAll(@Req() request: any) {
+    return this.expensesService.findAll(
+      request.user.userId,
+    );
+  }
 
-    @Get('user/:userId')
-    findByUser(@Param('userId') userId: string) {
-        return this.expensesService.findByUser(+userId);
-    }
+  @Get(':id')
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: any,
+  ) {
+    return this.expensesService.findOne(
+      id,
+      request.user.userId,
+    );
+  }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.expensesService.findOne(+id);
-    }
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateExpenseDto,
+    @Req() request: any,
+  ) {
+    return this.expensesService.update(
+      id,
+      dto,
+      request.user.userId,
+    );
+  }
 
-    @Patch(':id')
-    update(@Param('id') id: string, @Body() updateExpenseDto: UpdateExpenseDto) {
-        return this.expensesService.update(+id, updateExpenseDto);
-    }
-
-    @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.expensesService.remove(+id);
-    }
+  @Delete(':id')
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: any,
+  ) {
+    return this.expensesService.remove(
+      id,
+      request.user.userId,
+    );
+  }
 }

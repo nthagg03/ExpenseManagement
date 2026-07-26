@@ -1,51 +1,95 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { Expense } from './entities/expense.entity';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 
 @Injectable()
 export class ExpensesService {
-    constructor(
-        @InjectRepository(Expense)
-        private readonly expensesRepository: Repository<Expense>,
-    ) {}
+  constructor(
+    @InjectRepository(Expense)
+    private readonly repository: Repository<Expense>,
+  ) {}
 
-    create(createExpenseDto: CreateExpenseDto): Promise<Expense> {
-        const expense = this.expensesRepository.create(createExpenseDto);
-        return this.expensesRepository.save(expense);
+  async create(
+    dto: CreateExpenseDto,
+    userId: number,
+  ): Promise<Expense> {
+    const expense = this.repository.create({
+      ...dto,
+      userId,
+      categoryId: dto.categoryId ?? null,
+    });
+
+    return this.repository.save(expense);
+  }
+
+  async findAll(userId: number): Promise<Expense[]> {
+    return this.repository.find({
+      where: {
+        userId,
+      },
+      relations: {
+        category: true,
+      },
+      order: {
+        expenseDate: 'DESC',
+        id: 'DESC',
+      },
+    });
+  }
+
+  async findOne(
+    id: number,
+    userId: number,
+  ): Promise<Expense> {
+    const expense = await this.repository.findOne({
+      where: {
+        id,
+        userId,
+      },
+      relations: {
+        category: true,
+      },
+    });
+
+    if (!expense) {
+      throw new NotFoundException(
+        'Không tìm thấy khoản chi hoặc bạn không có quyền truy cập',
+      );
     }
 
-    findAll(): Promise<Expense[]> {
-        return this.expensesRepository.find({ relations: ['category', 'user'] });
-    }
+    return expense;
+  }
 
-    findByUser(userId: number): Promise<Expense[]> {
-        return this.expensesRepository.find({
-            where: { userId },
-            relations: ['category'],
-        });
-    }
+  async update(
+    id: number,
+    dto: UpdateExpenseDto,
+    userId: number,
+  ): Promise<Expense> {
+    const expense = await this.findOne(id, userId);
 
-    async findOne(id: number): Promise<Expense> {
-        const expense = await this.expensesRepository.findOne({
-            where: { id },
-            relations: ['category', 'user'],
-        });
-        if (!expense) throw new NotFoundException(`Expense #${id} not found`);
-        return expense;
-    }
+    Object.assign(expense, dto);
+    expense.userId = userId;
 
-    async update(id: number, updateExpenseDto: UpdateExpenseDto): Promise<Expense> {
-        await this.findOne(id);
-        await this.expensesRepository.update(id, updateExpenseDto);
-        return this.findOne(id);
-    }
+    return this.repository.save(expense);
+  }
 
-    async remove(id: number): Promise<{ message: string }> {
-        await this.findOne(id);
-        await this.expensesRepository.delete(id);
-        return { message: `Expense #${id} deleted successfully` };
-    }
+  async remove(
+    id: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const expense = await this.findOne(id, userId);
+
+    await this.repository.remove(expense);
+
+    return {
+      message: 'Xóa khoản chi thành công',
+    };
+  }
 }

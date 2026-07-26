@@ -1,10 +1,11 @@
+import { Type } from 'class-transformer';
 import {
   IsDateString,
   IsInt,
   IsNumber,
+  IsOptional,
   IsPositive,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class CreateBudgetDto {
   @Type(() => Number)
@@ -18,11 +19,8 @@ export class CreateBudgetDto {
   @IsDateString()
   endDate: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
-  categoryId: number;
-
-  @Type(() => Number)
-  @IsInt()
-  userId: number;
+  categoryId?: number;
 }

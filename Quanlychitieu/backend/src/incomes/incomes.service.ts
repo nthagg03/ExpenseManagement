@@ -13,46 +13,54 @@ import { UpdateIncomeDto } from './dto/update-income.dto';
 export class IncomesService {
   constructor(
     @InjectRepository(Income)
-    private readonly incomeRepository: Repository<Income>,
+    private readonly repository: Repository<Income>,
   ) {}
 
-  create(createIncomeDto: CreateIncomeDto) {
-    const income = this.incomeRepository.create(
-      createIncomeDto,
-    );
-
-    return this.incomeRepository.save(income);
-  }
-
-  findAll() {
-    return this.incomeRepository.find({
-      order: {
-        id: 'DESC',
-      },
+  async create(
+    dto: CreateIncomeDto,
+    userId: number,
+  ): Promise<Income> {
+    const income = this.repository.create({
+      ...dto,
+      userId,
+      categoryId: dto.categoryId ?? null,
     });
+
+    return this.repository.save(income);
   }
 
-  findByUser(userId: number) {
-    return this.incomeRepository.find({
+  async findAll(userId: number): Promise<Income[]> {
+    return this.repository.find({
       where: {
         userId,
       },
+      relations: {
+        category: true,
+      },
       order: {
+        incomeDate: 'DESC',
         id: 'DESC',
       },
     });
   }
 
-  async findOne(id: number) {
-    const income = await this.incomeRepository.findOne({
+  async findOne(
+    id: number,
+    userId: number,
+  ): Promise<Income> {
+    const income = await this.repository.findOne({
       where: {
         id,
+        userId,
+      },
+      relations: {
+        category: true,
       },
     });
 
     if (!income) {
       throw new NotFoundException(
-        `Không tìm thấy khoản thu có id ${id}`,
+        'Không tìm thấy khoản thu hoặc bạn không có quyền truy cập',
       );
     }
 
@@ -61,19 +69,24 @@ export class IncomesService {
 
   async update(
     id: number,
-    updateIncomeDto: UpdateIncomeDto,
-  ) {
-    const income = await this.findOne(id);
+    dto: UpdateIncomeDto,
+    userId: number,
+  ): Promise<Income> {
+    const income = await this.findOne(id, userId);
 
-    Object.assign(income, updateIncomeDto);
+    Object.assign(income, dto);
+    income.userId = userId;
 
-    return this.incomeRepository.save(income);
+    return this.repository.save(income);
   }
 
-  async remove(id: number) {
-    const income = await this.findOne(id);
+  async remove(
+    id: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const income = await this.findOne(id, userId);
 
-    await this.incomeRepository.remove(income);
+    await this.repository.remove(income);
 
     return {
       message: 'Xóa khoản thu thành công',

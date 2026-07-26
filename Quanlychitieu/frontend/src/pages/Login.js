@@ -26,7 +26,10 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await axiosClient.post('/auth/login', form);
+      const response = await axiosClient.post(
+        '/auth/login',
+        form,
+      );
 
       localStorage.setItem(
         'access_token',
@@ -35,9 +38,7 @@ function Login() {
 
       localStorage.setItem(
         'current_user',
-        JSON.stringify({
-          username: form.username,
-        }),
+        JSON.stringify(response.data.user),
       );
 
       navigate('/');

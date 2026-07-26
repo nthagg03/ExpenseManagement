@@ -122,18 +122,12 @@ function Incomes() {
       return;
     }
 
-    const userId = getCurrentUserId();
-
     const payload = {
       description: form.description.trim(),
       amount: Number(form.amount),
       incomeDate: form.incomeDate,
       categoryId: Number(form.categoryId),
     };
-
-    if (userId) {
-      payload.userId = Number(userId);
-    }
 
     try {
       setSubmitting(true);

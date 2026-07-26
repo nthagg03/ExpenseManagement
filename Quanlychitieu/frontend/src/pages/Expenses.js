@@ -21,18 +21,6 @@ function Expenses() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const getCurrentUserId = () => {
-    try {
-      const currentUser = JSON.parse(
-        localStorage.getItem('current_user') || 'null',
-      );
-
-      return currentUser?.id || currentUser?.userId || null;
-    } catch {
-      return null;
-    }
-  };
-
   const fetchExpenses = useCallback(async () => {
     try {
       const response = await axiosClient.get('/expenses');
@@ -122,18 +110,12 @@ function Expenses() {
       return;
     }
 
-    const userId = getCurrentUserId();
-
     const payload = {
       description: form.description.trim(),
       amount: Number(form.amount),
       expenseDate: form.expenseDate,
       categoryId: Number(form.categoryId),
     };
-
-    if (userId) {
-      payload.userId = Number(userId);
-    }
 
     try {
       setSubmitting(true);

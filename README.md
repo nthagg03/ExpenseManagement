@@ -275,29 +275,31 @@ README.md                                                                       
 
 ## 📊 Biểu đồ lớp (Class Diagram)
 
+![class Diagram](Quanlychitieu/Img/UML.png)
+
 --- 
 
 ## 🔁 Biểu đồ hoạt động (Activity Diagram)
 
 ### 1. Đăng nhập
 
-![login Diagram](Quanlychitieu/Img/expense.jpeg)
+![login Diagram](Quanlychitieu/Img/login.jpeg)
 
 ### 2. Chi tiêu
 
-![expense Diagram](Quanlychitieu/Img/expense.jpeg)
+![expense Diagram](Quanlychitieu/Img/chitieu.jpeg)
 
 ### 3. Thu nhập
 
-![expense Diagram](Quanlychitieu/Img/expense.jpeg)
+![income Diagram](Quanlychitieu/Img/thunhap.jpeg)
 
 ### 4. Quản lý danh mục
 
-![expense Diagram](Quanlychitieu/Img/expense.jpeg)
+![category Diagram](Quanlychitieu/Img/danhmuc.jpeg)
 
 ### 5. Quản lý ngân sách
 
-![expense Diagram](Quanlychitieu/Img/expense.jpeg)
+![budget Diagram](Quanlychitieu/Img/ngansach.jpeg)
 
 --- 
 

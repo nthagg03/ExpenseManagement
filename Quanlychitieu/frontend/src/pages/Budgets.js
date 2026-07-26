@@ -24,18 +24,6 @@ function Budgets() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const getCurrentUserId = () => {
-    try {
-      const currentUser = JSON.parse(
-        localStorage.getItem('current_user') || 'null',
-      );
-
-      return currentUser?.id || currentUser?.userId || null;
-    } catch {
-      return null;
-    }
-  };
-
   const fetchBudgets = useCallback(async () => {
     try {
       const response = await axiosClient.get('/budgets');
@@ -174,80 +162,77 @@ function Budgets() {
   };
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    setMessage('');
-    setError('');
+  setMessage('');
+  setError('');
 
-    if (!form.amount || Number(form.amount) <= 0) {
-      setError('Số tiền ngân sách phải lớn hơn 0.');
-      return;
-    }
+  if (!form.categoryId) {
+    setError('Vui lòng chọn danh mục.');
+    return;
+  }
 
-    if (!form.categoryId) {
-      setError('Vui lòng chọn danh mục.');
-      return;
-    }
+  if (!form.amount || Number(form.amount) <= 0) {
+    setError('Hạn mức ngân sách phải lớn hơn 0.');
+    return;
+  }
 
-    if (!form.startDate) {
-      setError('Vui lòng chọn ngày bắt đầu.');
-      return;
-    }
+  if (!form.startDate || !form.endDate) {
+    setError(
+      'Vui lòng nhập đầy đủ ngày bắt đầu và ngày kết thúc.',
+    );
+    return;
+  }
 
-    if (!form.endDate) {
-      setError('Vui lòng chọn ngày kết thúc.');
-      return;
-    }
+  if (new Date(form.startDate) > new Date(form.endDate)) {
+    setError(
+      'Ngày bắt đầu không được lớn hơn ngày kết thúc.',
+    );
+    return;
+  }
 
-    if (form.endDate < form.startDate) {
-      setError('Ngày kết thúc không được trước ngày bắt đầu.');
-      return;
-    }
-
-    const userId = getCurrentUserId();
-
-    if (!userId) {
-      setError(
-        'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.',
-      );
-      return;
-    }
-
-    const payload = {
-      amount: Number(form.amount),
-      startDate: form.startDate,
-      endDate: form.endDate,
-      categoryId: Number(form.categoryId),
-      userId: Number(userId),
-    };
-
-    try {
-      setSubmitting(true);
-
-      if (editingId) {
-        await axiosClient.patch(`/budgets/${editingId}`, payload);
-        setMessage('Cập nhật ngân sách thành công.');
-      } else {
-        await axiosClient.post('/budgets', payload);
-        setMessage('Thêm ngân sách thành công.');
-      }
-
-      resetForm();
-      await fetchBudgets();
-    } catch (err) {
-      console.error('Lỗi lưu ngân sách:', err);
-
-      const responseMessage = err.response?.data?.message;
-
-      setError(
-        Array.isArray(responseMessage)
-          ? responseMessage.join(', ')
-          : responseMessage || 'Không thể lưu ngân sách.',
-      );
-    } finally {
-      setSubmitting(false);
-    }
+  const payload = {
+    amount: Number(form.amount),
+    startDate: form.startDate,
+    endDate: form.endDate,
+    categoryId: Number(form.categoryId),
   };
+
+  try {
+    setSubmitting(true);
+
+    if (editingId !== null) {
+      await axiosClient.patch(
+        `/budgets/${editingId}`,
+        payload,
+      );
+
+      setMessage('Cập nhật ngân sách thành công.');
+    } else {
+      await axiosClient.post('/budgets', payload);
+
+      setMessage('Thêm ngân sách thành công.');
+    }
+
+    resetForm();
+    await fetchBudgets();
+  } catch (err) {
+    console.error('Lỗi lưu ngân sách:', err);
+
+    const responseMessage =
+      err.response?.data?.message;
+
+    setError(
+      Array.isArray(responseMessage)
+        ? responseMessage.join(', ')
+        : responseMessage ||
+            err.message ||
+            'Không thể lưu ngân sách.',
+    );
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const handleEdit = (budget) => {
     setForm({

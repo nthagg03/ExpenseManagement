@@ -1,28 +1,31 @@
+import { Type } from 'class-transformer';
 import {
-    IsNotEmpty, IsOptional, IsString,
-    IsNumber, IsDateString, MaxLength, Min
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateExpenseDto {
-    @IsOptional()
-    @IsNumber()
-    categoryId?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  categoryId?: number;
 
-    @IsNotEmpty()
-    @IsNumber()
-    userId: number;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  description: string;
 
-    @IsOptional()
-    @IsString()
-    @MaxLength(255)
-    description?: string;
+  @Type(() => Number)
+  @IsNumber()
+  @IsPositive()
+  amount: number;
 
-    @IsNotEmpty()
-    @IsNumber()
-    @Min(0)
-    amount: number;
-
-    @IsNotEmpty()
-    @IsDateString()
-    expenseDate: string;
+  @IsDateString()
+  expenseDate: string;
 }

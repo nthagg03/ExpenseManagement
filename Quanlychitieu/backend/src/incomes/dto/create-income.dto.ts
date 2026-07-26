@@ -1,16 +1,19 @@
+import { Type } from 'class-transformer';
 import {
   IsDateString,
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsPositive,
   IsString,
+  MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class CreateIncomeDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   description: string;
 
   @Type(() => Number)
@@ -21,11 +24,8 @@ export class CreateIncomeDto {
   @IsDateString()
   incomeDate: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
-  categoryId: number;
-
-  @Type(() => Number)
-  @IsInt()
-  userId: number;
+  categoryId?: number;
 }

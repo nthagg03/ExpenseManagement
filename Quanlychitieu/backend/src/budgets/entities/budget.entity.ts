@@ -1,12 +1,15 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
 
-@Entity()
+import { User } from '../../users/entities/user.entity';
+import { Category } from '../../categories/entities/category.entity';
+
+@Entity('budget')
 export class Budget {
   @PrimaryGeneratedColumn()
   id: number;
@@ -28,14 +31,36 @@ export class Budget {
   })
   endDate: string;
 
-  @Column()
-  categoryId: number;
+  @Column({
+    nullable: true,
+  })
+  categoryId: number | null;
 
   @Column()
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.budgets, {
-    onDelete: 'CASCADE',
+  @ManyToOne(
+    () => User,
+    (user) => user.budgets,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
+  @JoinColumn({
+    name: 'userId',
   })
   user: User;
+
+  @ManyToOne(
+    () => Category,
+    (category) => category.budgets,
+    {
+      nullable: true,
+      onDelete: 'SET NULL',
+    },
+  )
+  @JoinColumn({
+    name: 'categoryId',
+  })
+  category: Category | null;
 }

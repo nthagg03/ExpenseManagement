@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,46 +14,71 @@ import { UpdateBudgetDto } from './dto/update-budget.dto';
 export class BudgetsService {
   constructor(
     @InjectRepository(Budget)
-    private readonly budgetRepository: Repository<Budget>,
+    private readonly repository: Repository<Budget>,
   ) {}
 
-  create(createBudgetDto: CreateBudgetDto) {
-    const budget = this.budgetRepository.create(
-      createBudgetDto,
-    );
-
-    return this.budgetRepository.save(budget);
+  private validateDates(
+    startDate?: string,
+    endDate?: string,
+  ): void {
+    if (
+      startDate &&
+      endDate &&
+      new Date(startDate) > new Date(endDate)
+    ) {
+      throw new BadRequestException(
+        'Ngày bắt đầu không được sau ngày kết thúc',
+      );
+    }
   }
 
-  findAll() {
-    return this.budgetRepository.find({
-      order: {
-        id: 'DESC',
-      },
+  async create(
+    dto: CreateBudgetDto,
+    userId: number,
+  ): Promise<Budget> {
+    this.validateDates(dto.startDate, dto.endDate);
+
+    const budget = this.repository.create({
+      ...dto,
+      userId,
+      categoryId: dto.categoryId ?? null,
     });
+
+    return this.repository.save(budget);
   }
 
-  findByUser(userId: number) {
-    return this.budgetRepository.find({
+  async findAll(userId: number): Promise<Budget[]> {
+    return this.repository.find({
       where: {
         userId,
       },
+      relations: {
+        category: true,
+      },
       order: {
+        startDate: 'DESC',
         id: 'DESC',
       },
     });
   }
 
-  async findOne(id: number) {
-    const budget = await this.budgetRepository.findOne({
+  async findOne(
+    id: number,
+    userId: number,
+  ): Promise<Budget> {
+    const budget = await this.repository.findOne({
       where: {
         id,
+        userId,
+      },
+      relations: {
+        category: true,
       },
     });
 
     if (!budget) {
       throw new NotFoundException(
-        `Không tìm thấy ngân sách có id ${id}`,
+        'Không tìm thấy ngân sách hoặc bạn không có quyền truy cập',
       );
     }
 
@@ -61,19 +87,32 @@ export class BudgetsService {
 
   async update(
     id: number,
-    updateBudgetDto: UpdateBudgetDto,
-  ) {
-    const budget = await this.findOne(id);
+    dto: UpdateBudgetDto,
+    userId: number,
+  ): Promise<Budget> {
+    const budget = await this.findOne(id, userId);
 
-    Object.assign(budget, updateBudgetDto);
+    const nextStartDate =
+      dto.startDate ?? budget.startDate;
 
-    return this.budgetRepository.save(budget);
+    const nextEndDate =
+      dto.endDate ?? budget.endDate;
+
+    this.validateDates(nextStartDate, nextEndDate);
+
+    Object.assign(budget, dto);
+    budget.userId = userId;
+
+    return this.repository.save(budget);
   }
 
-  async remove(id: number) {
-    const budget = await this.findOne(id);
+  async remove(
+    id: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const budget = await this.findOne(id, userId);
 
-    await this.budgetRepository.remove(budget);
+    await this.repository.remove(budget);
 
     return {
       message: 'Xóa ngân sách thành công',
