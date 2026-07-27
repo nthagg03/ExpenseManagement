@@ -305,6 +305,7 @@ README.md                                                                       
 
 ## 🖼️ Giao diện chương trình (Console)
 
+![console](Quanlychitieu/Img/console.png)
 
 
 --- 
