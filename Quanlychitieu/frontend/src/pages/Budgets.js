@@ -1,698 +1,210 @@
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import '../styles/management.css';
 
 const today = new Date().toISOString().slice(0, 10);
-
-const initialForm = {
-  amount: '',
-  startDate: today,
-  endDate: today,
-  categoryId: '',
-};
+const initialForm = { amount: '', startDate: today, endDate: today, categoryId: '' };
+const money = (value) => Number(value || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 
 function Budgets() {
   const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
-
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
-
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   const fetchBudgets = useCallback(async () => {
     try {
       const response = await axiosClient.get('/budgets');
-
-      const data = Array.isArray(response.data)
-        ? response.data
-        : response.data?.data || [];
-
-      setBudgets(data);
+      setBudgets(Array.isArray(response.data) ? response.data : response.data?.data || []);
     } catch (err) {
-      console.error('Lỗi tải ngân sách:', err);
-
-      const responseMessage = err.response?.data?.message;
-
-      setError(
-        Array.isArray(responseMessage)
-          ? responseMessage.join(', ')
-          : responseMessage || 'Không thể tải danh sách ngân sách.',
-      );
+      setError(err.response?.data?.message || 'Không thể tải ngân sách.');
     }
   }, []);
 
   const fetchCategories = useCallback(async () => {
     try {
       const response = await axiosClient.get('/categories');
-
-      const data = Array.isArray(response.data)
-        ? response.data
-        : response.data?.data || [];
-
-      setCategories(data);
+      setCategories(Array.isArray(response.data) ? response.data : response.data?.data || []);
     } catch (err) {
-      console.error('Lỗi tải danh mục:', err);
-
-      const responseMessage = err.response?.data?.message;
-
-      setError(
-        Array.isArray(responseMessage)
-          ? responseMessage.join(', ')
-          : responseMessage || 'Không thể tải danh sách danh mục.',
-      );
+      setError(err.response?.data?.message || 'Không thể tải danh mục.');
     }
   }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError('');
-
-      await Promise.all([fetchBudgets(), fetchCategories()]);
-
-      setLoading(false);
-    };
-
-    loadData();
+    (async () => { setLoading(true); await Promise.all([fetchBudgets(), fetchCategories()]); setLoading(false); })();
   }, [fetchBudgets, fetchCategories]);
 
-  const filteredBudgets = useMemo(() => {
-    const keyword = searchKeyword.trim().toLowerCase();
+  const totalBudget = useMemo(
+    () => budgets.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    [budgets],
+  );
 
-    if (!keyword) {
-      return budgets;
-    }
+  const categoryName = useCallback((item) => {
+    if (item.category?.name) return item.category.name;
+    return categories.find((c) => Number(c.id) === Number(item.categoryId))?.name || 'Chưa xác định';
+  }, [categories]);
 
-    return budgets.filter((budget) => {
-      const categoryId =
-        budget.categoryId || budget.category?.id;
-
-      const category = categories.find(
-        (item) => Number(item.id) === Number(categoryId),
-      );
-
-      const categoryName =
-        budget.category?.name ||
-        category?.name ||
-        '';
-
-      const amount = String(budget.amount || '');
-
-      return (
-        categoryName.toLowerCase().includes(keyword) ||
-        amount.includes(keyword)
-      );
-    });
-  }, [budgets, categories, searchKeyword]);
-
-  const totalBudget = useMemo(() => {
-    return budgets.reduce(
-      (total, budget) => total + Number(budget.amount || 0),
-      0,
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return budgets;
+    return budgets.filter((item) =>
+      categoryName(item).toLowerCase().includes(q) ||
+      String(item.amount || '').includes(q)
     );
-  }, [budgets]);
+  }, [budgets, search, categoryName]);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const reset = () => { setForm(initialForm); setEditingId(null); };
 
-    setForm((previousForm) => ({
-      ...previousForm,
-      [name]: value,
-    }));
-  };
-
-  const resetForm = () => {
-    setForm(initialForm);
-    setEditingId(null);
-  };
-
-  const formatCurrency = (value) => {
-    return Number(value || 0).toLocaleString('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    });
-  };
-
-  const formatDate = (value) => {
-    if (!value) {
-      return '';
-    }
-
-    const [year, month, day] = String(value).slice(0, 10).split('-');
-
-    return `${day}/${month}/${year}`;
-  };
-
-  const getCategoryName = (budget) => {
-    if (budget.category?.name) {
-      return budget.category.name;
-    }
-
-    const category = categories.find(
-      (item) =>
-        Number(item.id) === Number(budget.categoryId),
-    );
-
-    return category?.name || 'Chưa xác định';
-  };
-
-  const handleSubmit = async (event) => {
-  event.preventDefault();
-
-  setMessage('');
-  setError('');
-
-  if (!form.categoryId) {
-    setError('Vui lòng chọn danh mục.');
-    return;
-  }
-
-  if (!form.amount || Number(form.amount) <= 0) {
-    setError('Hạn mức ngân sách phải lớn hơn 0.');
-    return;
-  }
-
-  if (!form.startDate || !form.endDate) {
-    setError(
-      'Vui lòng nhập đầy đủ ngày bắt đầu và ngày kết thúc.',
-    );
-    return;
-  }
-
-  if (new Date(form.startDate) > new Date(form.endDate)) {
-    setError(
-      'Ngày bắt đầu không được lớn hơn ngày kết thúc.',
-    );
-    return;
-  }
-
-  const payload = {
-    amount: Number(form.amount),
-    startDate: form.startDate,
-    endDate: form.endDate,
-    categoryId: Number(form.categoryId),
-  };
-
-  try {
-    setSubmitting(true);
-
-    if (editingId !== null) {
-      await axiosClient.patch(
-        `/budgets/${editingId}`,
-        payload,
-      );
-
-      setMessage('Cập nhật ngân sách thành công.');
-    } else {
-      await axiosClient.post('/budgets', payload);
-
-      setMessage('Thêm ngân sách thành công.');
-    }
-
-    resetForm();
-    await fetchBudgets();
-  } catch (err) {
-    console.error('Lỗi lưu ngân sách:', err);
-
-    const responseMessage =
-      err.response?.data?.message;
-
-    setError(
-      Array.isArray(responseMessage)
-        ? responseMessage.join(', ')
-        : responseMessage ||
-            err.message ||
-            'Không thể lưu ngân sách.',
-    );
-  } finally {
-    setSubmitting(false);
-  }
-};
-
-  const handleEdit = (budget) => {
-    setForm({
-      amount: budget.amount || '',
-      startDate: budget.startDate
-        ? String(budget.startDate).slice(0, 10)
-        : today,
-      endDate: budget.endDate
-        ? String(budget.endDate).slice(0, 10)
-        : today,
-      categoryId: String(
-        budget.categoryId || budget.category?.id || '',
-      ),
-    });
-
-    setEditingId(budget.id);
-    setMessage('');
-    setError('');
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-  };
-
-  const handleDelete = async (budget) => {
-    const confirmed = window.confirm(
-      `Bạn có chắc chắn muốn xóa ngân sách ${formatCurrency(
-        budget.amount,
-      )} không?`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
+  const submit = async (event) => {
+    event.preventDefault();
+    setMessage(''); setError('');
+    if (!form.categoryId) return setError('Vui lòng chọn danh mục.');
+    if (!form.amount || Number(form.amount) <= 0) return setError('Hạn mức phải lớn hơn 0.');
+    if (!form.startDate || !form.endDate) return setError('Vui lòng nhập đầy đủ thời gian.');
+    if (new Date(form.startDate) > new Date(form.endDate)) return setError('Ngày bắt đầu không được sau ngày kết thúc.');
 
     try {
-      setMessage('');
-      setError('');
-
-      await axiosClient.delete(`/budgets/${budget.id}`);
-
-      if (editingId === budget.id) {
-        resetForm();
+      setSubmitting(true);
+      const payload = {
+        amount: Number(form.amount),
+        startDate: form.startDate,
+        endDate: form.endDate,
+        categoryId: Number(form.categoryId),
+      };
+      if (editingId) {
+        await axiosClient.patch(`/budgets/${editingId}`, payload);
+        setMessage('Cập nhật ngân sách thành công.');
+      } else {
+        await axiosClient.post('/budgets', payload);
+        setMessage('Thêm ngân sách thành công.');
       }
+      reset();
+      await fetchBudgets();
+    } catch (err) {
+      const m = err.response?.data?.message;
+      setError(Array.isArray(m) ? m.join(', ') : m || 'Không thể lưu ngân sách.');
+    } finally { setSubmitting(false); }
+  };
 
+  const edit = (item) => {
+    setForm({
+      amount: item.amount || '',
+      startDate: item.startDate ? String(item.startDate).slice(0,10) : today,
+      endDate: item.endDate ? String(item.endDate).slice(0,10) : today,
+      categoryId: String(item.categoryId || item.category?.id || ''),
+    });
+    setEditingId(item.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const remove = async (item) => {
+    if (!window.confirm(`Xóa ngân sách ${money(item.amount)}?`)) return;
+    try {
+      await axiosClient.delete(`/budgets/${item.id}`);
+      if (editingId === item.id) reset();
       setMessage('Xóa ngân sách thành công.');
       await fetchBudgets();
     } catch (err) {
-      console.error('Lỗi xóa ngân sách:', err);
-
-      const responseMessage = err.response?.data?.message;
-
-      setError(
-        Array.isArray(responseMessage)
-          ? responseMessage.join(', ')
-          : responseMessage || 'Không thể xóa ngân sách.',
-      );
+      setError(err.response?.data?.message || 'Không thể xóa ngân sách.');
     }
   };
 
   return (
-    <div className="container-fluid">
-      <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div className="em-page">
+      <div className="em-page-header">
         <div>
-          <h2 className="fw-bold mb-1">Quản lý ngân sách</h2>
-
-          <p className="text-muted mb-0">
-            Thiết lập hạn mức chi tiêu theo từng danh mục và khoảng thời gian.
-          </p>
+          <p className="em-page-eyebrow">Budget planning</p>
+          <h1 className="em-page-title">Quản lý ngân sách</h1>
+          <p className="em-page-subtitle">Thiết lập hạn mức chi tiêu theo danh mục và thời gian.</p>
         </div>
-
-        <div className="d-flex flex-wrap gap-2">
-          <span className="badge rounded-pill text-bg-primary px-3 py-2">
-            {budgets.length} ngân sách
-          </span>
-
-          <span className="badge rounded-pill text-bg-success px-3 py-2">
-            Tổng: {formatCurrency(totalBudget)}
-          </span>
+        <div className="em-hero-actions">
+          <span className="em-pill"><i className="bi bi-bullseye" /> {budgets.length} ngân sách</span>
+          <span className="em-pill">Tổng {money(totalBudget)}</span>
         </div>
       </div>
 
-      {message && (
-        <div
-          className="alert alert-success alert-dismissible fade show shadow-sm"
-          role="alert"
-        >
-          <strong>Thành công!</strong> {message}
-
-          <button
-            type="button"
-            className="btn-close"
-            aria-label="Đóng"
-            onClick={() => setMessage('')}
-          />
-        </div>
-      )}
-
-      {error && (
-        <div
-          className="alert alert-danger alert-dismissible fade show shadow-sm"
-          role="alert"
-        >
-          <strong>Có lỗi xảy ra!</strong> {error}
-
-          <button
-            type="button"
-            className="btn-close"
-            aria-label="Đóng"
-            onClick={() => setError('')}
-          />
-        </div>
-      )}
+      {message && <div className="em-alert em-alert-success"><i className="bi bi-check-circle-fill" />{message}</div>}
+      {error && <div className="em-alert em-alert-danger"><i className="bi bi-exclamation-triangle-fill" />{error}</div>}
 
       <div className="row g-4">
         <div className="col-12 col-xl-4">
-          <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body p-4">
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <div
-                  className="d-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary fw-bold"
-                  style={{
-                    width: 52,
-                    height: 52,
-                    fontSize: 24,
-                  }}
-                >
-                  {editingId ? '✎' : '₫'}
-                </div>
-
-                <div>
-                  <h5 className="fw-bold mb-1">
-                    {editingId
-                      ? 'Cập nhật ngân sách'
-                      : 'Tạo ngân sách mới'}
-                  </h5>
-
-                  <p className="small text-muted mb-0">
-                    Nhập hạn mức và thời gian áp dụng.
-                  </p>
-                </div>
+          <div className="em-card em-form-card">
+            <div className="em-section-title">
+              <div className="em-section-icon" style={{ background: 'linear-gradient(135deg,#4f46e5,#06b6d4)' }}>
+                <i className={`bi ${editingId ? 'bi-pencil-fill' : 'bi-bullseye'}`} />
               </div>
-
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label
-                    htmlFor="categoryId"
-                    className="form-label fw-semibold"
-                  >
-                    Danh mục
-                    <span className="text-danger ms-1">*</span>
-                  </label>
-
-                  <select
-                    id="categoryId"
-                    name="categoryId"
-                    className="form-select form-select-lg"
-                    value={form.categoryId}
-                    onChange={handleChange}
-                  >
-                    <option value="">-- Chọn danh mục --</option>
-
-                    {categories.map((category) => (
-                      <option
-                        key={category.id}
-                        value={category.id}
-                      >
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="mb-3">
-                  <label
-                    htmlFor="amount"
-                    className="form-label fw-semibold"
-                  >
-                    Hạn mức ngân sách
-                    <span className="text-danger ms-1">*</span>
-                  </label>
-
-                  <div className="input-group input-group-lg">
-                    <input
-                      id="amount"
-                      name="amount"
-                      type="number"
-                      min="1"
-                      step="1"
-                      className="form-control"
-                      placeholder="Ví dụ: 5000000"
-                      value={form.amount}
-                      onChange={handleChange}
-                    />
-
-                    <span className="input-group-text">VNĐ</span>
-                  </div>
-
-                  {form.amount && Number(form.amount) > 0 && (
-                    <small className="text-success d-block mt-2">
-                      {formatCurrency(form.amount)}
-                    </small>
-                  )}
-                </div>
-
-                <div className="mb-3">
-                  <label
-                    htmlFor="startDate"
-                    className="form-label fw-semibold"
-                  >
-                    Ngày bắt đầu
-                    <span className="text-danger ms-1">*</span>
-                  </label>
-
-                  <input
-                    id="startDate"
-                    name="startDate"
-                    type="date"
-                    className="form-control"
-                    value={form.startDate}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label
-                    htmlFor="endDate"
-                    className="form-label fw-semibold"
-                  >
-                    Ngày kết thúc
-                    <span className="text-danger ms-1">*</span>
-                  </label>
-
-                  <input
-                    id="endDate"
-                    name="endDate"
-                    type="date"
-                    className="form-control"
-                    value={form.endDate}
-                    min={form.startDate}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="d-grid gap-2">
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-lg"
-                    disabled={submitting}
-                  >
-                    {submitting
-                      ? 'Đang lưu...'
-                      : editingId
-                        ? 'Lưu thay đổi'
-                        : 'Thêm ngân sách'}
-                  </button>
-
-                  {editingId && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={resetForm}
-                      disabled={submitting}
-                    >
-                      Hủy chỉnh sửa
-                    </button>
-                  )}
-                </div>
-              </form>
+              <div><h3>{editingId ? 'Cập nhật ngân sách' : 'Ngân sách mới'}</h3><p>Đặt mục tiêu rõ ràng cho từng danh mục.</p></div>
             </div>
+            <form onSubmit={submit}>
+              <div className="mb-3">
+                <label className="em-label">Danh mục *</label>
+                <select className="em-select" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+                  <option value="">-- Chọn danh mục --</option>
+                  {categories.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="mb-3">
+                <label className="em-label">Hạn mức *</label>
+                <input className="em-input" type="number" min="1" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="5000000" />
+                {form.amount && <div className="em-money-income mt-2 small">{money(form.amount)}</div>}
+              </div>
+              <div className="row g-3">
+                <div className="col-6"><label className="em-label">Ngày bắt đầu *</label><input className="em-input" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></div>
+                <div className="col-6"><label className="em-label">Ngày kết thúc *</label><input className="em-input" type="date" min={form.startDate} value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} /></div>
+              </div>
+              <button className="em-button em-button-primary w-100 mt-4" disabled={submitting}>
+                {submitting ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Thêm ngân sách'}
+              </button>
+              {editingId && <button type="button" className="em-button em-button-soft w-100 mt-2" onClick={reset}>Hủy chỉnh sửa</button>}
+            </form>
           </div>
         </div>
 
         <div className="col-12 col-xl-8">
-          <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body p-4">
-              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-                <div>
-                  <h5 className="fw-bold mb-1">
-                    Danh sách ngân sách
-                  </h5>
-
-                  <p className="small text-muted mb-0">
-                    Theo dõi các hạn mức ngân sách đang có.
-                  </p>
-                </div>
-
-                <div
-                  className="input-group"
-                  style={{
-                    maxWidth: 320,
-                  }}
-                >
-                  <span className="input-group-text bg-white">
-                    🔍
-                  </span>
-
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Tìm theo danh mục..."
-                    value={searchKeyword}
-                    onChange={(event) =>
-                      setSearchKeyword(event.target.value)
-                    }
-                  />
-
-                  {searchKeyword && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={() => setSearchKeyword('')}
-                    >
-                      Xóa
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {loading ? (
-                <div className="text-center py-5">
-                  <div
-                    className="spinner-border text-primary"
-                    role="status"
-                  >
-                    <span className="visually-hidden">
-                      Đang tải...
-                    </span>
-                  </div>
-
-                  <p className="text-muted mt-3 mb-0">
-                    Đang tải danh sách ngân sách...
-                  </p>
-                </div>
-              ) : filteredBudgets.length === 0 ? (
-                <div className="text-center py-5">
-                  <div
-                    className="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
-                    style={{
-                      width: 76,
-                      height: 76,
-                      fontSize: 32,
-                    }}
-                  >
-                    🎯
-                  </div>
-
-                  <h6 className="fw-bold">
-                    {searchKeyword
-                      ? 'Không tìm thấy ngân sách phù hợp'
-                      : 'Chưa có ngân sách nào'}
-                  </h6>
-
-                  <p className="text-muted mb-0">
-                    {searchKeyword
-                      ? 'Hãy thử tìm bằng từ khóa khác.'
-                      : 'Hãy tạo ngân sách đầu tiên bằng biểu mẫu bên trái.'}
-                  </p>
-                </div>
-              ) : (
-                <div className="row g-3">
-                  {filteredBudgets.map((budget) => (
-                    <div
-                      className="col-12 col-md-6"
-                      key={budget.id}
-                    >
-                      <div className="card h-100 border rounded-4">
-                        <div className="card-body p-4">
-                          <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
-                            <div className="d-flex align-items-center gap-3">
-                              <div
-                                className="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary fw-bold"
-                                style={{
-                                  width: 48,
-                                  height: 48,
-                                  flexShrink: 0,
-                                }}
-                              >
-                                ₫
-                              </div>
-
-                              <div>
-                                <div className="small text-muted">
-                                  Danh mục
-                                </div>
-
-                                <h6 className="fw-bold mb-0">
-                                  {getCategoryName(budget)}
-                                </h6>
-                              </div>
-                            </div>
-
-                            <span className="badge rounded-pill text-bg-light border">
-                              #{budget.id}
-                            </span>
-                          </div>
-
-                          <div className="mb-3">
-                            <div className="small text-muted mb-1">
-                              Hạn mức
-                            </div>
-
-                            <div className="fs-4 fw-bold text-primary">
-                              {formatCurrency(budget.amount)}
-                            </div>
-                          </div>
-
-                          <div className="bg-light rounded-3 p-3 mb-3">
-                            <div className="d-flex justify-content-between gap-3">
-                              <div>
-                                <div className="small text-muted">
-                                  Bắt đầu
-                                </div>
-
-                                <div className="fw-semibold">
-                                  {formatDate(budget.startDate)}
-                                </div>
-                              </div>
-
-                              <div className="text-muted d-flex align-items-end">
-                                →
-                              </div>
-
-                              <div className="text-end">
-                                <div className="small text-muted">
-                                  Kết thúc
-                                </div>
-
-                                <div className="fw-semibold">
-                                  {formatDate(budget.endDate)}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="d-flex gap-2">
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary flex-grow-1"
-                              onClick={() => handleEdit(budget)}
-                            >
-                              Sửa
-                            </button>
-
-                            <button
-                              type="button"
-                              className="btn btn-outline-danger flex-grow-1"
-                              onClick={() => handleDelete(budget)}
-                            >
-                              Xóa
-                            </button>
-                          </div>
+          <div className="em-card">
+            <div className="em-toolbar">
+              <div><h3>Danh sách ngân sách</h3><div className="text-muted small">Theo dõi các hạn mức đang áp dụng</div></div>
+              <div className="em-search"><i className="bi bi-search" /><input className="em-input" placeholder="Tìm theo danh mục..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+            </div>
+            {loading ? <div className="em-loading"><div className="spinner-border text-primary" /></div> :
+              filtered.length === 0 ? <div className="em-empty"><div className="em-empty-icon"><i className="bi bi-bullseye" /></div>Chưa có ngân sách phù hợp.</div> :
+              <div className="em-budget-grid">
+                {filtered.map((item, index) => (
+                  <div className="em-budget-card" key={item.id}>
+                    <div className="d-flex justify-content-between align-items-start gap-3">
+                      <div className="d-flex gap-3">
+                        <div className="em-category-icon" style={{ background: index % 2 ? 'linear-gradient(135deg,#10b981,#06b6d4)' : 'linear-gradient(135deg,#4f46e5,#8b5cf6)' }}>
+                          <i className="bi bi-bullseye" />
+                        </div>
+                        <div>
+                          <div className="text-muted small">Danh mục</div>
+                          <div className="fw-bold">{categoryName(item)}</div>
                         </div>
                       </div>
+                      <span className="em-pill">#{item.id}</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <div className="mt-3 mb-2 text-muted small">Hạn mức</div>
+                    <div className="fs-4 fw-bold" style={{ color: '#4f46e5' }}>{money(item.amount)}</div>
+                    <div className="em-progress my-3"><span style={{ width: '100%' }} /></div>
+                    <div className="d-flex justify-content-between text-muted" style={{ fontSize: 11.5 }}>
+                      <span>{new Date(item.startDate).toLocaleDateString('vi-VN')}</span>
+                      <i className="bi bi-arrow-right" />
+                      <span>{new Date(item.endDate).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                    <div className="d-flex gap-2 mt-3">
+                      <button className="em-button em-button-soft flex-grow-1" onClick={() => edit(item)}><i className="bi bi-pencil" /> Sửa</button>
+                      <button className="em-button em-button-soft flex-grow-1" style={{ color: '#f43f5e' }} onClick={() => remove(item)}><i className="bi bi-trash3" /> Xóa</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            }
           </div>
         </div>
       </div>

@@ -43,71 +43,64 @@ function Topbar({ onToggleSidebar }) {
     <header className="app-topbar">
       <button
         type="button"
-        className="btn btn-light d-lg-none"
+        className="topbar-menu-btn d-lg-none"
         onClick={onToggleSidebar}
         aria-label="Mở menu"
       >
-        <i className="bi bi-list fs-4" />
+        <i className="bi bi-list" />
       </button>
 
-      <div className="d-none d-md-block">
-        <div className="fw-semibold">
-          Xin chào, {displayName}
+      <div className="topbar-greeting d-none d-md-block">
+        <div className="topbar-greeting-title">
+          Xin chào, <strong>{displayName}</strong> 👋
         </div>
-
-        <small className="text-muted">
+        <div className="topbar-greeting-sub">
           Chúc bạn có một ngày tài chính hiệu quả.
-        </small>
+        </div>
       </div>
 
-      <div className="dropdown ms-auto">
+      <div className="ms-auto dropdown">
         <button
-          className="btn btn-light border dropdown-toggle d-flex align-items-center gap-2"
+          className="topbar-user-btn dropdown-toggle"
           type="button"
           data-bs-toggle="dropdown"
           aria-expanded="false"
         >
-          <div
-            className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
-            style={{
-              width: 36,
-              height: 36,
-            }}
-          >
+          <div className="topbar-avatar">
             {String(displayName).charAt(0).toUpperCase()}
           </div>
 
-          <span className="d-none d-sm-inline text-truncate">
+          <span className="d-none d-sm-inline topbar-user-name">
             {displayName}
           </span>
+
+          <i className="bi bi-chevron-down topbar-chevron" />
         </button>
 
-        <ul className="dropdown-menu dropdown-menu-end shadow border-0">
-          <li>
-            <div className="dropdown-item-text">
-              <div className="fw-semibold">
-                {displayName}
-              </div>
-
+        <ul className="dropdown-menu dropdown-menu-end topbar-dropdown shadow border-0">
+          <li className="topbar-dropdown-header">
+            <div className="topbar-dropdown-avatar">
+              {String(displayName).charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="topbar-dropdown-name">{displayName}</div>
               {currentUser?.email && (
-                <small className="text-muted">
+                <div className="topbar-dropdown-email">
                   {currentUser.email}
-                </small>
+                </div>
               )}
             </div>
           </li>
 
-          <li>
-            <hr className="dropdown-divider" />
-          </li>
+          <li><hr className="dropdown-divider my-1" /></li>
 
           <li>
             <button
               type="button"
-              className="dropdown-item text-danger"
+              className="dropdown-item topbar-logout-btn"
               onClick={handleLogout}
             >
-              <i className="bi bi-box-arrow-right me-2" />
+              <i className="bi bi-box-arrow-right" />
               Đăng xuất
             </button>
           </li>

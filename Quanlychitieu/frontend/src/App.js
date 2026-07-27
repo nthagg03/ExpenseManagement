@@ -7,6 +7,7 @@ import {
 
 import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import './App.css';
 
 import Login from './pages/Login';
 import Register from './pages/Register';

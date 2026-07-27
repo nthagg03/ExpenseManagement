@@ -1,118 +1,61 @@
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import '../styles/management.css';
 
-const initialForm = {
-  name: '',
-  description: '',
-};
+const initialForm = { name: '', description: '' };
+const gradients = [
+  'linear-gradient(135deg,#4f46e5,#06b6d4)',
+  'linear-gradient(135deg,#10b981,#06b6d4)',
+  'linear-gradient(135deg,#f59e0b,#f97316)',
+  'linear-gradient(135deg,#f43f5e,#8b5cf6)',
+];
 
 function Categories() {
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
-
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   const fetchCategories = useCallback(async () => {
     try {
-      setError('');
-
       const response = await axiosClient.get('/categories');
-
-      const data = Array.isArray(response.data)
-        ? response.data
-        : response.data?.data || [];
-
-      setCategories(data);
+      setCategories(Array.isArray(response.data) ? response.data : response.data?.data || []);
     } catch (err) {
-      console.error('Lỗi tải danh mục:', err);
-
-      const responseMessage = err.response?.data?.message;
-
-      setError(
-        Array.isArray(responseMessage)
-          ? responseMessage.join(', ')
-          : responseMessage || 'Không thể tải danh sách danh mục.',
-      );
+      setError(err.response?.data?.message || 'Không thể tải danh mục.');
     }
   }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await fetchCategories();
-      setLoading(false);
-    };
-
-    loadData();
+    (async () => { setLoading(true); await fetchCategories(); setLoading(false); })();
   }, [fetchCategories]);
 
-  const filteredCategories = useMemo(() => {
-    const keyword = searchKeyword.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return categories;
+    return categories.filter((c) =>
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.description || '').toLowerCase().includes(q)
+    );
+  }, [categories, search]);
 
-    if (!keyword) {
-      return categories;
-    }
+  const reset = () => { setForm(initialForm); setEditingId(null); };
 
-    return categories.filter((category) => {
-      const name = category.name?.toLowerCase() || '';
-      const description = category.description?.toLowerCase() || '';
-
-      return name.includes(keyword) || description.includes(keyword);
-    });
-  }, [categories, searchKeyword]);
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-
-    setForm((previousForm) => ({
-      ...previousForm,
-      [name]: value,
-    }));
-  };
-
-  const resetForm = () => {
-    setForm(initialForm);
-    setEditingId(null);
-  };
-
-  const handleSubmit = async (event) => {
+  const submit = async (event) => {
     event.preventDefault();
-
-    setMessage('');
-    setError('');
-
-    const categoryName = form.name.trim();
-    const categoryDescription = form.description.trim();
-
-    if (!categoryName) {
-      setError('Vui lòng nhập tên danh mục.');
-      return;
-    }
-
-    if (categoryName.length > 100) {
-      setError('Tên danh mục không được vượt quá 100 ký tự.');
-      return;
-    }
-
-    if (categoryDescription.length > 255) {
-      setError('Mô tả không được vượt quá 255 ký tự.');
-      return;
-    }
-
-    const payload = {
-      name: categoryName,
-      description: categoryDescription || undefined,
-    };
-
+    setMessage(''); setError('');
+    if (!form.name.trim()) return setError('Vui lòng nhập tên danh mục.');
+    if (form.name.trim().length > 100) return setError('Tên danh mục tối đa 100 ký tự.');
     try {
       setSubmitting(true);
-
+      const payload = {
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+      };
       if (editingId) {
         await axiosClient.patch(`/categories/${editingId}`, payload);
         setMessage('Cập nhật danh mục thành công.');
@@ -120,411 +63,105 @@ function Categories() {
         await axiosClient.post('/categories', payload);
         setMessage('Thêm danh mục thành công.');
       }
-
-      resetForm();
+      reset();
       await fetchCategories();
     } catch (err) {
-      console.error('Lỗi lưu danh mục:', err);
-
-      const responseMessage = err.response?.data?.message;
-
-      setError(
-        Array.isArray(responseMessage)
-          ? responseMessage.join(', ')
-          : responseMessage || 'Không thể lưu danh mục.',
-      );
-    } finally {
-      setSubmitting(false);
-    }
+      const m = err.response?.data?.message;
+      setError(Array.isArray(m) ? m.join(', ') : m || 'Không thể lưu danh mục.');
+    } finally { setSubmitting(false); }
   };
 
-  const handleEdit = (category) => {
-    setForm({
-      name: category.name || '',
-      description: category.description || '',
-    });
-
+  const edit = (category) => {
+    setForm({ name: category.name || '', description: category.description || '' });
     setEditingId(category.id);
-    setMessage('');
-    setError('');
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (category) => {
-    const confirmed = window.confirm(
-      `Bạn có chắc chắn muốn xóa danh mục "${category.name}" không?`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+  const remove = async (category) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa danh mục "${category.name}" không?`)) return;
     try {
-      setMessage('');
-      setError('');
-
       await axiosClient.delete(`/categories/${category.id}`);
-
-      if (editingId === category.id) {
-        resetForm();
-      }
-
+      if (editingId === category.id) reset();
       setMessage('Xóa danh mục thành công.');
       await fetchCategories();
     } catch (err) {
-      console.error('Lỗi xóa danh mục:', err);
-
-      const responseMessage = err.response?.data?.message;
-
-      setError(
-        Array.isArray(responseMessage)
-          ? responseMessage.join(', ')
-          : responseMessage ||
-              'Không thể xóa danh mục. Danh mục có thể đang được sử dụng.',
-      );
+      setError(err.response?.data?.message || 'Không thể xóa danh mục đang được sử dụng.');
     }
   };
 
   return (
-    <div className="container-fluid">
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div className="em-page">
+      <div className="em-page-header">
         <div>
-          <h2 className="fw-bold mb-1">Quản lý danh mục</h2>
-
-          <p className="text-muted mb-0">
-            Tạo và quản lý các nhóm thu nhập, chi tiêu trong hệ thống.
-          </p>
+          <p className="em-page-eyebrow">Category workspace</p>
+          <h1 className="em-page-title">Quản lý danh mục</h1>
+          <p className="em-page-subtitle">Tổ chức các khoản thu, chi và ngân sách theo nhóm rõ ràng.</p>
         </div>
-
-        <div className="d-flex gap-2">
-          <span className="badge rounded-pill text-bg-primary px-3 py-2">
-            Tổng: {categories.length}
-          </span>
-
-          <span className="badge rounded-pill text-bg-light border px-3 py-2">
-            Hiển thị: {filteredCategories.length}
-          </span>
-        </div>
+        <span className="em-pill"><i className="bi bi-folder2-open" /> {categories.length} danh mục</span>
       </div>
 
-      {message && (
-        <div
-          className="alert alert-success alert-dismissible fade show shadow-sm"
-          role="alert"
-        >
-          <strong>Thành công!</strong> {message}
-
-          <button
-            type="button"
-            className="btn-close"
-            aria-label="Đóng"
-            onClick={() => setMessage('')}
-          />
-        </div>
-      )}
-
-      {error && (
-        <div
-          className="alert alert-danger alert-dismissible fade show shadow-sm"
-          role="alert"
-        >
-          <strong>Có lỗi xảy ra!</strong> {error}
-
-          <button
-            type="button"
-            className="btn-close"
-            aria-label="Đóng"
-            onClick={() => setError('')}
-          />
-        </div>
-      )}
+      {message && <div className="em-alert em-alert-success"><i className="bi bi-check-circle-fill" />{message}</div>}
+      {error && <div className="em-alert em-alert-danger"><i className="bi bi-exclamation-triangle-fill" />{error}</div>}
 
       <div className="row g-4">
         <div className="col-12 col-xl-4">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body p-4">
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <div
-                  className="d-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary"
-                  style={{
-                    width: 48,
-                    height: 48,
-                    fontSize: 22,
-                    fontWeight: 700,
-                  }}
-                >
-                  {editingId ? '✎' : '+'}
-                </div>
-
-                <div>
-                  <h5 className="fw-bold mb-1">
-                    {editingId ? 'Cập nhật danh mục' : 'Thêm danh mục'}
-                  </h5>
-
-                  <p className="text-muted small mb-0">
-                    {editingId
-                      ? 'Chỉnh sửa thông tin danh mục đã chọn.'
-                      : 'Tạo danh mục mới cho thu nhập hoặc chi tiêu.'}
-                  </p>
-                </div>
+          <div className="em-card em-form-card">
+            <div className="em-section-title">
+              <div className="em-section-icon" style={{ background: 'linear-gradient(135deg,#4f46e5,#06b6d4)' }}>
+                <i className={`bi ${editingId ? 'bi-pencil-fill' : 'bi-plus-lg'}`} />
               </div>
-
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="name" className="form-label fw-semibold">
-                    Tên danh mục
-                    <span className="text-danger ms-1">*</span>
-                  </label>
-
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    className="form-control form-control-lg"
-                    placeholder="Ví dụ: Ăn uống"
-                    value={form.name}
-                    onChange={handleChange}
-                    maxLength={100}
-                  />
-
-                  <div className="d-flex justify-content-between mt-1">
-                    <small className="text-muted">
-                      Tên ngắn gọn, dễ nhận biết.
-                    </small>
-
-                    <small className="text-muted">
-                      {form.name.length}/100
-                    </small>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label
-                    htmlFor="description"
-                    className="form-label fw-semibold"
-                  >
-                    Mô tả
-                  </label>
-
-                  <textarea
-                    id="description"
-                    name="description"
-                    className="form-control"
-                    placeholder="Ví dụ: Các khoản chi cho ăn sáng, ăn trưa..."
-                    rows="5"
-                    value={form.description}
-                    onChange={handleChange}
-                    maxLength={255}
-                  />
-
-                  <div className="text-end mt-1">
-                    <small className="text-muted">
-                      {form.description.length}/255
-                    </small>
-                  </div>
-                </div>
-
-                <div className="d-grid gap-2">
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-lg"
-                    disabled={submitting}
-                  >
-                    {submitting
-                      ? 'Đang lưu...'
-                      : editingId
-                        ? 'Lưu thay đổi'
-                        : 'Thêm danh mục'}
-                  </button>
-
-                  {editingId && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={resetForm}
-                      disabled={submitting}
-                    >
-                      Hủy chỉnh sửa
-                    </button>
-                  )}
-                </div>
-              </form>
+              <div><h3>{editingId ? 'Cập nhật danh mục' : 'Danh mục mới'}</h3><p>Tạo nhóm dữ liệu dễ nhận biết.</p></div>
             </div>
+            <form onSubmit={submit}>
+              <div className="mb-3">
+                <label className="em-label">Tên danh mục *</label>
+                <input className="em-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={100} placeholder="Ví dụ: Ăn uống" />
+              </div>
+              <div className="mb-3">
+                <label className="em-label">Mô tả</label>
+                <textarea className="em-textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={255} placeholder="Mô tả ngắn cho danh mục..." />
+              </div>
+              <button className="em-button em-button-primary w-100" disabled={submitting}>
+                {submitting ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Thêm danh mục'}
+              </button>
+              {editingId && <button type="button" className="em-button em-button-soft w-100 mt-2" onClick={reset}>Hủy chỉnh sửa</button>}
+            </form>
           </div>
         </div>
 
         <div className="col-12 col-xl-8">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body p-4">
-              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-                <div>
-                  <h5 className="fw-bold mb-1">Danh sách danh mục</h5>
-
-                  <p className="text-muted small mb-0">
-                    Quản lý tất cả danh mục hiện có trong hệ thống.
-                  </p>
-                </div>
-
-                <div
-                  className="input-group"
-                  style={{
-                    maxWidth: 320,
-                  }}
-                >
-                  <span className="input-group-text bg-white">⌕</span>
-
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Tìm kiếm danh mục..."
-                    value={searchKeyword}
-                    onChange={(event) =>
-                      setSearchKeyword(event.target.value)
-                    }
-                  />
-
-                  {searchKeyword && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={() => setSearchKeyword('')}
-                    >
-                      Xóa
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {loading ? (
-                <div className="text-center py-5">
-                  <div
-                    className="spinner-border text-primary"
-                    role="status"
-                  >
-                    <span className="visually-hidden">Đang tải...</span>
-                  </div>
-
-                  <p className="text-muted mt-3 mb-0">
-                    Đang tải danh sách danh mục...
-                  </p>
-                </div>
-              ) : filteredCategories.length === 0 ? (
-                <div className="text-center py-5">
-                  <div
-                    className="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3"
-                    style={{
-                      width: 72,
-                      height: 72,
-                      fontSize: 30,
-                    }}
-                  >
-                    📁
-                  </div>
-
-                  <h6 className="fw-bold">
-                    {searchKeyword
-                      ? 'Không tìm thấy danh mục phù hợp'
-                      : 'Chưa có danh mục nào'}
-                  </h6>
-
-                  <p className="text-muted mb-0">
-                    {searchKeyword
-                      ? 'Hãy thử tìm kiếm bằng từ khóa khác.'
-                      : 'Hãy thêm danh mục đầu tiên bằng biểu mẫu bên trái.'}
-                  </p>
-                </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle">
-                    <thead className="table-light">
-                      <tr>
-                        <th style={{ width: 70 }}>STT</th>
-                        <th>Tên danh mục</th>
-                        <th>Mô tả</th>
-                        <th
-                          className="text-center"
-                          style={{ width: 180 }}
-                        >
-                          Thao tác
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {filteredCategories.map((category, index) => (
-                        <tr key={category.id}>
-                          <td className="text-muted">{index + 1}</td>
-
-                          <td>
-                            <div className="d-flex align-items-center gap-3">
-                              <div
-                                className="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"
-                                style={{
-                                  width: 42,
-                                  height: 42,
-                                  flexShrink: 0,
-                                }}
-                              >
-                                {category.name
-                                  ? category.name
-                                      .trim()
-                                      .charAt(0)
-                                      .toUpperCase()
-                                  : '?'}
-                              </div>
-
-                              <div>
-                                <div className="fw-semibold">
-                                  {category.name}
-                                </div>
-
-                                <small className="text-muted">
-                                  Mã danh mục: #{category.id}
-                                </small>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td>
-                            {category.description ? (
-                              <span>{category.description}</span>
-                            ) : (
-                              <span className="text-muted fst-italic">
-                                Chưa có mô tả
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="text-center">
-                            <div className="d-flex justify-content-center gap-2">
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-primary px-3"
-                                onClick={() => handleEdit(category)}
-                              >
-                                Sửa
-                              </button>
-
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-danger px-3"
-                                onClick={() => handleDelete(category)}
-                              >
-                                Xóa
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          <div className="em-card">
+            <div className="em-toolbar">
+              <div><h3>Thư viện danh mục</h3><div className="text-muted small">{filtered.length} kết quả</div></div>
+              <div className="em-search"><i className="bi bi-search" /><input className="em-input" placeholder="Tìm tên hoặc mô tả..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
             </div>
+            {loading ? <div className="em-loading"><div className="spinner-border text-primary" /></div> :
+              filtered.length === 0 ? <div className="em-empty"><div className="em-empty-icon"><i className="bi bi-folder2-open" /></div>Chưa có danh mục phù hợp.</div> :
+              <div className="em-category-grid">
+                {filtered.map((category, index) => (
+                  <div className="em-category-card" key={category.id}>
+                    <div className="d-flex align-items-start gap-3">
+                      <div className="em-category-icon" style={{ background: gradients[index % gradients.length] }}>
+                        {(category.name || '?').trim().charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-grow-1">
+                        <div className="d-flex justify-content-between gap-2">
+                          <div>
+                            <div className="fw-bold">{category.name}</div>
+                            <div className="text-muted" style={{ fontSize: 11.5 }}>Mã #{category.id}</div>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <button className="em-icon-button" onClick={() => edit(category)}><i className="bi bi-pencil" /></button>
+                            <button className="em-icon-button danger" onClick={() => remove(category)}><i className="bi bi-trash3" /></button>
+                          </div>
+                        </div>
+                        <p className="text-muted small mt-3 mb-0">{category.description || 'Chưa có mô tả cho danh mục này.'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            }
           </div>
         </div>
       </div>

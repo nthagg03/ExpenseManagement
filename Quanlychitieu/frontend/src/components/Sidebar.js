@@ -4,28 +4,28 @@ const menuItems = [
   {
     path: '/',
     label: 'Tổng quan',
-    icon: 'bi-grid',
+    icon: 'bi-grid-1x2-fill',
     end: true,
   },
   {
     path: '/expenses',
     label: 'Chi tiêu',
-    icon: 'bi-credit-card',
+    icon: 'bi-arrow-down-circle-fill',
   },
   {
     path: '/incomes',
     label: 'Thu nhập',
-    icon: 'bi-wallet2',
+    icon: 'bi-arrow-up-circle-fill',
   },
   {
     path: '/categories',
     label: 'Danh mục',
-    icon: 'bi-folder2-open',
+    icon: 'bi-tags-fill',
   },
   {
     path: '/budgets',
     label: 'Ngân sách',
-    icon: 'bi-bullseye',
+    icon: 'bi-pie-chart-fill',
   },
 ];
 
@@ -39,12 +39,12 @@ function Sidebar() {
 
         <div>
           <div className="brand-title">Expense Manager</div>
-          <div className="brand-subtitle">Quản lý tài chính</div>
+          <div className="brand-subtitle">Quản lý tài chính cá nhân</div>
         </div>
       </div>
 
       <nav className="sidebar-menu">
-        <div className="sidebar-label">MENU CHÍNH</div>
+        <div className="sidebar-label">DÀNH CHO BẠN</div>
 
         {menuItems.map((item) => (
           <NavLink
@@ -62,12 +62,11 @@ function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="small text-white-50">
-          Expense Management
+        <div className="small opacity-75">
+          Expense Manager v2.0
         </div>
-
-        <div className="small text-white-50">
-          Phiên bản 1.0
+        <div className="small opacity-50 mt-1">
+          Bảo mật & Tự động
         </div>
       </div>
     </aside>
