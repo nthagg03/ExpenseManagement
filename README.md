@@ -28,6 +28,7 @@ Hệ thống được thiết kế để giải quyết các bài toán cơ bả
   - [🖼️ Giao diện chương trình (Console)](#️-giao-diện-chương-trình-console)
   - [💡 Công nghệ sử dụng](#-công-nghệ-sử-dụng)
   - [📚 Tài liệu tham khảo](#-tài-liệu-tham-khảo)
+  - [🚀 Installation](#-Installation)
 
 
 --- 
@@ -378,9 +379,9 @@ README.md                                                                       
 
 --- 
 
-# Installation
+## 🚀 Installation
 
-## Clone repository
+### Clone repository
 
 ```bash
 git clone https://github.com/your-group/ExpenseManagement.git
@@ -388,7 +389,7 @@ git clone https://github.com/your-group/ExpenseManagement.git
 
 ---
 
-## Backend
+### Backend
 
 ```bash
 cd backend
@@ -417,7 +418,7 @@ npm run start:dev
 
 ---
 
-## Frontend
+### Frontend
 
 ```bash
 cd frontend
