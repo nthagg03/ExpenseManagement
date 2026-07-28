@@ -1,19 +1,71 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import {
+  Outlet,
+  useLocation,
+} from 'react-router-dom';
+
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+
 import './AppLayout.css';
 
 function AppLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
+
+  const location = useLocation();
 
   const handleToggleSidebar = () => {
-    setSidebarOpen((previousState) => !previousState);
+    setSidebarOpen((previousState) => {
+      return !previousState;
+    });
   };
 
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
   };
+
+  useEffect(() => {
+    handleCloseSidebar();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        handleCloseSidebar();
+      }
+    };
+
+    document.addEventListener(
+      'keydown',
+      handleEscapeKey,
+    );
+
+    return () => {
+      document.removeEventListener(
+        'keydown',
+        handleEscapeKey,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add(
+        'sidebar-body-locked',
+      );
+    } else {
+      document.body.classList.remove(
+        'sidebar-body-locked',
+      );
+    }
+
+    return () => {
+      document.body.classList.remove(
+        'sidebar-body-locked',
+      );
+    };
+  }, [sidebarOpen]);
 
   return (
     <div className="app-shell">
@@ -22,7 +74,9 @@ function AppLayout() {
           sidebarOpen ? 'sidebar-open' : ''
         }`}
       >
-        <Sidebar />
+        <Sidebar
+          onNavigate={handleCloseSidebar}
+        />
       </div>
 
       {sidebarOpen && (
@@ -35,14 +89,20 @@ function AppLayout() {
       )}
 
       <div className="app-main">
-        <Topbar onToggleSidebar={handleToggleSidebar} />
+        <Topbar
+          onToggleSidebar={
+            handleToggleSidebar
+          }
+          sidebarOpen={sidebarOpen}
+        />
 
         <main className="app-content">
           <Outlet />
         </main>
 
         <footer className="app-footer">
-          © {new Date().getFullYear()} Expense Management
+          © {new Date().getFullYear()} Expense
+          Management
         </footer>
       </div>
     </div>

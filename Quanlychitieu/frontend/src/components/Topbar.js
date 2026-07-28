@@ -1,12 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 
-function Topbar({ onToggleSidebar }) {
+function Topbar({
+  onToggleSidebar,
+  sidebarOpen,
+}) {
   const navigate = useNavigate();
 
   const getCurrentUser = () => {
     try {
       return JSON.parse(
-        localStorage.getItem('current_user') || 'null',
+        localStorage.getItem(
+          'current_user',
+        ) || 'null',
       );
     } catch {
       return null;
@@ -21,6 +26,12 @@ function Topbar({ onToggleSidebar }) {
     currentUser?.username ||
     currentUser?.email ||
     'Người dùng';
+
+  const userInitial =
+    String(displayName)
+      .trim()
+      .charAt(0)
+      .toUpperCase() || 'U';
 
   const handleLogout = () => {
     const confirmed = window.confirm(
@@ -41,36 +52,56 @@ function Topbar({ onToggleSidebar }) {
 
   return (
     <header className="app-topbar">
-      <button
-        type="button"
-        className="topbar-menu-btn d-lg-none"
-        onClick={onToggleSidebar}
-        aria-label="Mở menu"
-      >
-        <i className="bi bi-list" />
-      </button>
+      <div className="topbar-left">
+        <button
+          type="button"
+          className="topbar-menu-btn d-lg-none"
+          onClick={onToggleSidebar}
+          aria-label={
+            sidebarOpen
+              ? 'Đóng menu'
+              : 'Mở menu'
+          }
+          aria-expanded={sidebarOpen}
+        >
+          <i
+            className={`bi ${
+              sidebarOpen
+                ? 'bi-x-lg'
+                : 'bi-list'
+            }`}
+          />
+        </button>
 
-      <div className="topbar-greeting d-none d-md-block">
-        <div className="topbar-greeting-title">
-          Xin chào, <strong>{displayName}</strong> 👋
+        <div className="topbar-greeting d-none d-md-block">
+          <div className="topbar-greeting-title">
+            Xin chào,{' '}
+            <strong>{displayName}</strong> 👋
+          </div>
+
+          <div className="topbar-greeting-sub">
+            Chúc bạn có một ngày tài chính
+            hiệu quả.
+          </div>
         </div>
-        <div className="topbar-greeting-sub">
-          Chúc bạn có một ngày tài chính hiệu quả.
+
+        <div className="topbar-mobile-title d-md-none">
+          Quản lý chi tiêu
         </div>
       </div>
 
-      <div className="ms-auto dropdown">
+      <div className="dropdown">
         <button
-          className="topbar-user-btn dropdown-toggle"
+          className="topbar-user-btn"
           type="button"
           data-bs-toggle="dropdown"
           aria-expanded="false"
         >
           <div className="topbar-avatar">
-            {String(displayName).charAt(0).toUpperCase()}
+            {userInitial}
           </div>
 
-          <span className="d-none d-sm-inline topbar-user-name">
+          <span className="topbar-user-name">
             {displayName}
           </span>
 
@@ -80,10 +111,14 @@ function Topbar({ onToggleSidebar }) {
         <ul className="dropdown-menu dropdown-menu-end topbar-dropdown shadow border-0">
           <li className="topbar-dropdown-header">
             <div className="topbar-dropdown-avatar">
-              {String(displayName).charAt(0).toUpperCase()}
+              {userInitial}
             </div>
-            <div>
-              <div className="topbar-dropdown-name">{displayName}</div>
+
+            <div className="topbar-dropdown-user-info">
+              <div className="topbar-dropdown-name">
+                {displayName}
+              </div>
+
               {currentUser?.email && (
                 <div className="topbar-dropdown-email">
                   {currentUser.email}
@@ -92,7 +127,9 @@ function Topbar({ onToggleSidebar }) {
             </div>
           </li>
 
-          <li><hr className="dropdown-divider my-1" /></li>
+          <li>
+            <hr className="dropdown-divider my-1" />
+          </li>
 
           <li>
             <button

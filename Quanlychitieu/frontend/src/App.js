@@ -7,7 +7,6 @@ import {
 
 import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
-import './App.css';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -17,27 +16,57 @@ import Incomes from './pages/Incomes';
 import Categories from './pages/Categories';
 import Budgets from './pages/Budgets';
 
+import './App.css';
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/register"
+          element={<Register />}
+        />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/incomes" element={<Incomes />} />
             <Route
-              path="/categories"
+              index
+              element={<Dashboard />}
+            />
+
+            <Route
+              path="expenses"
+              element={<Expenses />}
+            />
+
+            <Route
+              path="incomes"
+              element={<Incomes />}
+            />
+
+            <Route
+              path="categories"
               element={<Categories />}
             />
-            <Route path="/budgets" element={<Budgets />} />
+
+            <Route
+              path="budgets"
+              element={<Budgets />}
+            />
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="*"
+          element={
+            <Navigate to="/" replace />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

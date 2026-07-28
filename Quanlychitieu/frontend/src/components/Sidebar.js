@@ -1,35 +1,35 @@
 import { NavLink } from 'react-router-dom';
 
-const menuItems = [
-  {
-    path: '/',
-    label: 'Tổng quan',
-    icon: 'bi-grid-1x2-fill',
-    end: true,
-  },
-  {
-    path: '/expenses',
-    label: 'Chi tiêu',
-    icon: 'bi-arrow-down-circle-fill',
-  },
-  {
-    path: '/incomes',
-    label: 'Thu nhập',
-    icon: 'bi-arrow-up-circle-fill',
-  },
-  {
-    path: '/categories',
-    label: 'Danh mục',
-    icon: 'bi-tags-fill',
-  },
-  {
-    path: '/budgets',
-    label: 'Ngân sách',
-    icon: 'bi-pie-chart-fill',
-  },
-];
+function Sidebar({ onNavigate }) {
+  const menuItems = [
+    {
+      path: '/',
+      label: 'Tổng quan',
+      icon: 'bi-speedometer2',
+      end: true,
+    },
+    {
+      path: '/expenses',
+      label: 'Chi tiêu',
+      icon: 'bi-wallet2',
+    },
+    {
+      path: '/incomes',
+      label: 'Thu nhập',
+      icon: 'bi-cash-stack',
+    },
+    {
+      path: '/categories',
+      label: 'Danh mục',
+      icon: 'bi-tags',
+    },
+    {
+      path: '/budgets',
+      label: 'Ngân sách',
+      icon: 'bi-piggy-bank',
+    },
+  ];
 
-function Sidebar() {
   return (
     <aside className="app-sidebar">
       <div className="sidebar-brand">
@@ -38,21 +38,31 @@ function Sidebar() {
         </div>
 
         <div>
-          <div className="brand-title">Expense Manager</div>
-          <div className="brand-subtitle">Quản lý tài chính cá nhân</div>
+          <div className="brand-title">
+            Expense Manager
+          </div>
+
+          <div className="brand-subtitle">
+            Quản lý tài chính
+          </div>
         </div>
       </div>
 
-      <nav className="sidebar-menu">
-        <div className="sidebar-label">DÀNH CHO BẠN</div>
+      <div className="sidebar-label">
+        Menu chính
+      </div>
 
+      <nav className="sidebar-menu">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             end={item.end}
+            onClick={onNavigate}
             className={({ isActive }) =>
-              `sidebar-link ${isActive ? 'active' : ''}`
+              `sidebar-link ${
+                isActive ? 'active' : ''
+              }`
             }
           >
             <i className={`bi ${item.icon}`} />
@@ -62,11 +72,8 @@ function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="small opacity-75">
-          Expense Manager v2.0
-        </div>
-        <div className="small opacity-50 mt-1">
-          Bảo mật & Tự động
+        <div className="brand-subtitle">
+          Theo dõi chi tiêu thông minh
         </div>
       </div>
     </aside>
