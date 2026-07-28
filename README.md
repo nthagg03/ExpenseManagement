@@ -16,7 +16,7 @@ Hệ thống được thiết kế để giải quyết các bài toán cơ bả
 --- 
 ## 📖 Mục lục
 
-- [🚀 Ứng dụng quản lý chi tiêu cá nhân](#-ứng-dụng-quản-lý-chi-tiêu-cá-nhân)
+- [Ứng dụng quản lý chi tiêu cá nhân](#-ứng-dụng-quản-lý-chi-tiêu-cá-nhân)
   - [🎯 Giới thiệu](#-giới-thiệu)
   - [📖 Mục lục](#-mục-lục)
   - [👥 Thành viên nhóm](#-thành-viên-nhóm)
@@ -28,6 +28,7 @@ Hệ thống được thiết kế để giải quyết các bài toán cơ bả
   - [🖼️ Giao diện chương trình (Console)](#️-giao-diện-chương-trình-console)
   - [💡 Công nghệ sử dụng](#-công-nghệ-sử-dụng)
   - [📚 Tài liệu tham khảo](#-tài-liệu-tham-khảo)
+  - [🚀 Installation](#-Installation)
 
 
 --- 
@@ -270,7 +271,55 @@ README.md                                                                       
 --- 
 ## ✨ Tính năng chính
 
+>Hệ thống Quản lý Chi tiêu Cá nhân được phát triển nhằm hỗ trợ người dùng quản lý tài chính cá nhân một cách hiệu quả, trực quan và an toàn. Ứng dụng cung cấp các chức năng chính sau
 
+### 🔐 **Quản lý tài khoản người dùng**
+- **Đăng ký tài khoản mới bằng tên đăng nhập, email và mật khẩu.**
+- **Đăng nhập bằng JWT Authentication.**
+- **Mã hóa mật khẩu bằng bcrypt trước khi lưu vào cơ sở dữ liệu.**
+- **Đăng xuất và bảo vệ các API yêu cầu xác thực.**
+### 💸 **Quản lý khoản chi (Expenses)**
+- **Thêm khoản chi mới.**
+- **Chỉnh sửa thông tin khoản chi.**
+- **Xóa khoản chi.**
+- **Hiển thị danh sách toàn bộ khoản chi.**
+- **Tìm kiếm và lọc khoản chi theo danh mục hoặc thời gian.**
+- **Thống kê tổng số tiền đã chi.**
+### 💰 **Quản lý khoản thu (Incomes)**
+- **Thêm khoản thu nhập mới.**
+- **Cập nhật thông tin khoản thu.**
+- **Xóa khoản thu.**
+- **Hiển thị danh sách thu nhập.**
+- **Lọc dữ liệu theo danh mục hoặc ngày phát sinh.**
+- **Thống kê tổng thu nhập.**
+### 📂 **Quản lý danh mục (Categories)**
+- **Tạo danh mục mới.**
+- **Chỉnh sửa danh mục.**
+- **Xóa danh mục.**
+- **Hiển thị danh sách danh mục.**
+- **Liên kết danh mục với các khoản thu, khoản chi và ngân sách.**
+### 📈 **Quản lý ngân sách (Budgets)**
+- **Thiết lập ngân sách cho từng danh mục.**
+- **Cập nhật hoặc xóa ngân sách.**
+- **Theo dõi số tiền đã sử dụng.**
+- **Hiển thị số tiền còn lại của từng ngân sách.**
+- **Cảnh báo khi ngân sách vượt giới hạn đã thiết lập.** 
+### 📊 **Dashboard thống kê**
+- **Hiển thị tổng thu nhập.**
+- **Hiển thị tổng chi tiêu.**
+- **Hiển thị số dư hiện tại.**
+- **Biểu đồ trực quan về tình hình tài chính.**
+- **Thống kê nhanh giúp người dùng dễ dàng theo dõi dòng tiền.**
+### 🔒 **Bảo mật hệ thống**
+- **Xác thực bằng JWT (JSON Web Token).**
+- **Mã hóa mật khẩu bằng bcrypt.**
+- **Kiểm tra dữ liệu đầu vào bằng Validation.**
+- **Phân quyền người dùng theo tài khoản.**
+- **Chỉ chủ sở hữu mới có quyền truy cập và chỉnh sửa dữ liệu của mình.**
+### 💻 **Giao diện người dùng**
+- **Giao diện hiện đại, thân thiện và dễ sử dụng.**
+- **Thiết kế Responsive phù hợp trên nhiều kích thước màn hình.**
+- **Các chức năng được bố trí khoa học giúp người dùng thao tác thuận tiện.**
 --- 
 
 ## 📊 Biểu đồ lớp (Class Diagram)
@@ -312,64 +361,85 @@ README.md                                                                       
 
 ## 💡 Công nghệ sử dụng
 
-- Ngôn ngữ lập trình: **Typescript**
-- Framework: [NestJS](https://nestjs.com/)
-- Frontend
-
-- ReactJS
-
-- React Router DOM
-
-- Axios
-
-- Bootstrap 5
-
-- Chart.js
-
-Backend
-
-- NestJS
-
-- TypeScript
-
-- JWT
-
-- bcrypt
-
-- TypeORM
-
-Database
-
-- MySQL
+| Thành phần | Công nghệ |
+|------------|-----------|
+| Frontend | ReactJS, React Router DOM, Axios, Bootstrap 5, Chart.js |
+| Backend | NestJS, TypeScript, JWT, bcrypt, TypeORM |
+| Database | MySQL |
+| Kiểm thử | Postman |
+| Quản lý mã nguồn | Git, GitHub |
+| IDE | Visual Studio Code |
 --- 
 
 ## 📚 Tài liệu tham khảo
 
-- Slide bài giảng môn Lập trình Web – GVHD: Nguyễn Lệ Thu
-- Java Docs – Oracle
+- Slide học phần Lập trình Web Nâng cao Đại học Phenikaa. – GVHD: Nguyễn Lệ Thu
+- NestJS, React Documentation
 - Stack Overflow – Community
 
 --- 
 
-## Hướng dẫn cài đặt
+## 🚀 Installation
 
-1. Clone project
-git clone <repository-url>
+### Clone repository
 
-2. Cài đặt packages
+```bash
+git clone https://github.com/your-group/ExpenseManagement.git
+```
+
+---
+
+### Backend
+
+```bash
+cd backend
+
+npm install
+```
+
+Create `.env`
+
+```env
+PORT=3001
+DB_HOST=expense-management-db-emdb.c.aivencloud.com
+DB_USER=avnadmin
+DB_NAME=defaultdb
+DB_PORT=14390
+DB_PASSWORD=your_password
+DB_DATABASE=expense_management
+JWT_SECRET=your_secret_key
+```
+
+Run backend
+
+```bash
+npm run start:dev
+```
+
+---
+
+### Frontend
+
+```bash
+cd frontend
+
 npm install
 
-3. Tạo file .env
+npm start
+```
 
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=quanlychitieu
-PORT=3000
+Frontend
 
-4. Chạy server
-npm run start:dev
+```
+http://localhost:3000
+```
+
+Backend
+
+```
+http://localhost:3001
+```
+
 
 > © 2026 Nhóm I'm back    
 > *Ứng dụng quản lý chi tiêu – Mã nguồn mở cho mục đích học tập*
